@@ -1,0 +1,45 @@
+import type { NewsItem } from '../../types/domain.ts'
+
+/** 预先写好的下一批演示材料。载入是幂等的，不会按时间随机生成。 */
+export const HOT_DEMO_BATCH: NewsItem[] = [
+  {
+    id: 'batch-e01-a',
+    title: '淮州至洛带航线公布下一班试飞窗口（封面新闻，2026年11月10日）',
+    summary: '封面新闻于2026年11月10日报道「淮州至洛带载人航线首飞」。运营方补充了下一班试飞窗口，仍未公布常规票价。',
+    body: '金堂淮州机场工作人员确认，下一班试飞窗口定在 11 月 12 日上午，仍只从已报名体验名单里安排乘客。现场再次说明，常规售票还没有开始，票价也没有公布。首飞当天的记录仍是 6 名乘客、约 28 公里，这一班不改变那些数字。',
+    publishedAt: '2026-11-10T17:40:00+08:00',
+    ingestedAt: '2026-11-10T18:40:00+08:00',
+    topicId: 't01',
+    eventId: 'e01',
+    eventName: '淮州至洛带载人航线首飞',
+    categoryId: 'low-air',
+    mediaId: 'cover',
+    mediaName: '封面新闻',
+    columnName: '封面新闻·成都观察',
+    platform: '客户端',
+    nature: 'simulated',
+  },
+  {
+    id: 'batch-e01-b',
+    title: '首飞复盘留下四段完成时间（四川日报，2026年11月10日）',
+    summary: '四川日报于2026年11月10日报道「淮州至洛带载人航线首飞」。复盘材料把申请、放行、飞行和复盘四段时间分开列出。',
+    body: '运营方在复盘说明里重申，首飞被拆成申请、放行、飞行和复盘四段，每段都留了完成时间。能否复制到下一班，仍取决于同一窗口有没有临时限制。说明没有新增乘客人数，也没有把试飞说成已经售票。',
+    publishedAt: '2026-11-10T17:50:00+08:00',
+    ingestedAt: '2026-11-10T18:40:00+08:00',
+    topicId: 't01',
+    eventId: 'e01',
+    eventName: '淮州至洛带载人航线首飞',
+    categoryId: 'low-air',
+    mediaId: 'scdaily',
+    mediaName: '四川日报',
+    columnName: '四川日报数字版·成都版',
+    platform: '网站',
+    nature: 'simulated',
+  },
+]
+
+export const DEMO_COVERAGE = {
+  start: '2026-10-28',
+  end: '2026-11-10',
+  statement: '模拟种子数据声明覆盖 2026-10-28 至 2026-11-10 的演示快照与报道，不代表该日期范围内的真实采集完整。',
+}

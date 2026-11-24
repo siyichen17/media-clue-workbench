@@ -1,0 +1,49 @@
+.reports-page {
+  min-height: 100%;
+  padding: 20px 24px 32px;
+  background: #f5f7fb;
+  color: #1f2937;
+}
+.reports-top, .reports-filters, .reports-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+.reports-top h1 { margin: 0; font-size: 22px; }
+.reports-top p, .reports-faint { margin: 4px 0 0; color: #667085; font-size: 13px; }
+.reports-filters, .reports-card, .reports-dialog {
+  margin-top: 16px;
+  background: #fff;
+  border: 1px solid #e6ebf2;
+  border-radius: 12px;
+}
+.reports-filters { padding: 12px; flex-wrap: wrap; align-items: center; }
+.reports-filters input, .reports-filters select, .reports-dialog input, .reports-dialog select {
+  height: 34px;
+  border: 1px solid #d7dee8;
+  border-radius: 8px;
+  padding: 0 10px;
+  background: #fff;
+}
+.reports-card { overflow: auto; }
+.reports-table { width: 100%; border-collapse: collapse; min-width: 860px; }
+.reports-table th, .reports-table td { padding: 12px; border-bottom: 1px solid #eef2f6; text-align: left; vertical-align: top; }
+.reports-table th { color: #667085; font-size: 12px; font-weight: 600; }
+.reports-title { display: block; max-width: 280px; line-height: 1.4; }
+.reports-ops { display: flex; gap: 8px; align-items: center; position: relative; }
+.reports-menu { position: absolute; right: 0; top: 28px; z-index: 2; min-width: 120px; padding: 6px; background: #fff; border: 1px solid #e6ebf2; border-radius: 8px; box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08); }
+.reports-menu button, .reports-types button { display: block; width: 100%; text-align: left; }
+.reports-types { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin: 12px 0; }
+.reports-type { display: grid; gap: 6px; padding: 14px; text-align: left; border: 1px solid #e6ebf2; border-radius: 12px; background: #fff; }
+.reports-type strong { font-size: 15px; }
+.reports-type span, .reports-type small { color: #667085; line-height: 1.45; }
+.reports-empty { display: grid; gap: 8px; justify-items: start; padding: 28px; }
+.reports-dialog { position: relative; padding: 16px; }
+.reports-list { max-height: 280px; overflow: auto; border: 1px solid #eef2f6; border-radius: 8px; }
+.reports-list label { display: flex; gap: 8px; padding: 8px 10px; border-bottom: 1px solid #f3f6fa; }
+.reports-banner { margin: 12px 0; padding: 8px 10px; background: #f8fafc; border-radius: 8px; }
+@media (max-width: 800px) {
+  .reports-page { padding: 12px; }
+  .reports-top { flex-wrap: wrap; }
+}

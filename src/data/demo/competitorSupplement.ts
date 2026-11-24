@@ -1,0 +1,38 @@
+import type { NewsItem } from '../../types/domain.ts'
+
+/** 仅供竞品监控演示材料完整程度，不并入线索总览的 200 条新闻。 */
+export const SUPPLEMENT_NEWS: NewsItem[] = [
+  {
+    id: 'sx-title-e01',
+    title: '淮州至洛带航线再飞一轮（新京报，2026年11月8日）',
+    summary: '',
+    body: '',
+    publishedAt: '2026-11-08T11:20:00+08:00',
+    topicId: 't01',
+    eventId: 'e01',
+    eventName: '淮州至洛带载人航线首飞',
+    categoryId: 'low-air',
+    mediaId: 'bjnews',
+    mediaName: '新京报',
+    columnName: '新京报·都市',
+    platform: '网站',
+    nature: 'simulated',
+  },
+  {
+    id: 'sx-summary-e02',
+    title: '东部新区空域批复只写试航（观察者网，2026年11月9日）',
+    summary:
+      '观察者网于2026年11月9日摘录「试点空域阶段性批复」。公开说明只确认约 120 平方公里用于试航和训练，没有写经营性载客已经放开。',
+    body: '',
+    publishedAt: '2026-11-09T15:40:00+08:00',
+    topicId: 't01',
+    eventId: 'e02',
+    eventName: '试点空域阶段性批复',
+    categoryId: 'low-air',
+    mediaId: 'guancha',
+    mediaName: '观察者网',
+    columnName: '观察者网·城市',
+    platform: '网站',
+    nature: 'simulated',
+  },
+]

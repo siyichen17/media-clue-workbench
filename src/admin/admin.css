@@ -1,0 +1,37 @@
+.admin-dialog {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.35);
+  display: flex;
+  justify-content: flex-end;
+  z-index: 30;
+}
+.admin-sheet {
+  width: min(460px, 100%);
+  height: 100%;
+  background: #fff;
+  border-left: 1px solid #e6edf5;
+  padding: 20px 22px 32px;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.admin-sheet h2 { font-size: 18px; }
+.admin-sheet textarea { width: 100%; border: 1px solid #dbe3ee; border-radius: 6px; padding: 8px; font: inherit; }
+.admin-sheet p { color: #64748b; font-size: 13px; }
+.admin-actions { display: flex; gap: 8px; justify-content: flex-end; }
+.admin-table td { max-width: 280px; }
+.admin-ellipsis {
+  display: block;
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.admin-note { color: #9a3412; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 8px; padding: 8px 10px; font-size: 13px; }
+.admin-tabs { display: flex; gap: 8px; }
+.kpi-zones { display: grid; grid-template-columns: 1.4fr 0.8fr; gap: 16px; }
+@media (max-width: 1100px) {
+  .kpi-zones { grid-template-columns: 1fr; }
+}

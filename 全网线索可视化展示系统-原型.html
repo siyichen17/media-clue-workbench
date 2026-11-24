@@ -1,0 +1,2847 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>全网线索可视化展示系统 - 封面新闻</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg-root:#f5f7fa;--bg-panel:#ffffff;--bg-panel-alt:#f8f9fb;--bg-hover:#f0f4f8;--bg-card:#ffffff;
+  --border:#e2e8f0;--border-light:#cbd5e1;
+  --text-1:#1e293b;--text-2:#475569;--text-3:#94a3b8;--text-4:#cbd5e1;
+  --accent:#3b82f6;--accent2:#8b5cf6;--accent3:#ef4444;--accent4:#f59e0b;--accent5:#10b981;
+  --shadow-sm:0 1px 3px rgba(0,0,0,0.06),0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md:0 4px 12px rgba(0,0,0,0.08);--shadow-lg:0 8px 24px rgba(0,0,0,0.12);
+  --radius:8px;--radius-lg:12px;--sidebar-w:220px;--topbar-h:56px;
+}
+html{font-size:14px;}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;background:var(--bg-root);color:var(--text-1);line-height:1.6;overflow-x:hidden;}
+a{color:var(--accent);text-decoration:none;}
+button{cursor:pointer;font-family:inherit;border:none;background:none;font-size:inherit;}
+input,select,textarea{font-family:inherit;font-size:inherit;}
+::-webkit-scrollbar{width:6px;height:6px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:#c1c9d4;border-radius:3px;}
+
+.app{display:flex;min-height:100vh;}
+.sidebar{width:var(--sidebar-w);background:var(--bg-panel);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100;transition:transform .3s;}
+.sidebar-logo{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.sidebar-logo .logo-icon{width:32px;height:32px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:16px;}
+.sidebar-logo .logo-text{font-size:15px;font-weight:700;color:var(--text-1);}
+.sidebar-logo .logo-sub{font-size:10px;color:var(--text-3);display:block;}
+.sidebar-nav{flex:1;padding:12px 0;overflow-y:auto;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;color:var(--text-2);font-size:13.5px;cursor:pointer;transition:all .15s;border-left:3px solid transparent;}
+.nav-item:hover{background:var(--bg-hover);color:var(--text-1);}
+.nav-item.active{background:#eff6ff;color:var(--accent);border-left-color:var(--accent);font-weight:600;}
+.nav-item .nav-icon{width:20px;text-align:center;font-size:16px;flex-shrink:0;}
+.nav-section-label{padding:16px 20px 4px;font-size:10px;color:var(--text-3);text-transform:uppercase;letter-spacing:1px;font-weight:600;}
+.sidebar-footer{padding:12px 20px;border-top:1px solid var(--border);font-size:12px;color:var(--text-3);}
+.main{flex:1;margin-left:var(--sidebar-w);display:flex;flex-direction:column;min-height:100vh;transition:margin-left .3s;}
+.topbar{height:var(--topbar-h);background:var(--bg-panel);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:sticky;top:0;z-index:50;}
+.topbar-left{display:flex;align-items:center;gap:16px;}
+.topbar-left h2{font-size:16px;font-weight:600;}
+.topbar-right{display:flex;align-items:center;gap:16px;}
+.topbar-clock{font-size:13px;color:var(--text-2);font-variant-numeric:tabular-nums;}
+.topbar-badge{background:#fef2f2;color:var(--accent3);font-size:12px;padding:2px 8px;border-radius:10px;font-weight:500;}
+.topbar-user{display:flex;align-items:center;gap:8px;}
+.topbar-avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:600;}
+.content{flex:1;padding:20px 24px;}
+.page{display:none;animation:fadeIn .3s ease;}.page.active{display:block;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+
+.kpi-row{display:grid;gap:16px;margin-bottom:20px;}
+.kpi-row.cols-5{grid-template-columns:repeat(5,1fr);}
+.kpi-row.cols-4{grid-template-columns:repeat(4,1fr);}
+.kpi-row.cols-3{grid-template-columns:repeat(3,1fr);}
+.kpi-card{background:var(--bg-card);border-radius:var(--radius-lg);padding:18px 20px;box-shadow:var(--shadow-sm);border:1px solid var(--border);}
+.kpi-card .kpi-label{font-size:12px;color:var(--text-3);margin-bottom:4px;display:flex;align-items:center;gap:6px;}
+.kpi-card .kpi-value{font-size:28px;font-weight:700;color:var(--text-1);font-variant-numeric:tabular-nums;}
+.kpi-card .kpi-change{font-size:11px;margin-top:4px;}
+.kpi-card .kpi-change.up{color:var(--accent5);}
+.kpi-card .kpi-change.down{color:var(--accent3);}
+.panel{background:var(--bg-card);border-radius:var(--radius-lg);box-shadow:var(--shadow-sm);border:1px solid var(--border);margin-bottom:20px;overflow:hidden;}
+.panel-header{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.panel-header h3{font-size:14px;font-weight:600;}
+.panel-body{padding:16px 20px;}
+.panel-filter{display:flex;gap:6px;}
+.panel-filter button{font-size:12px;padding:4px 12px;border-radius:6px;color:var(--text-2);background:var(--bg-panel-alt);border:1px solid var(--border);transition:all .15s;}
+.panel-filter button:hover{background:var(--bg-hover);}
+.panel-filter button.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;}
+.grid-2-1{display:grid;grid-template-columns:2fr 1fr;gap:20px;}
+.grid-1-2{display:grid;grid-template-columns:1fr 2fr;gap:20px;}
+.chip-group{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+.chip{padding:6px 16px;border-radius:20px;font-size:13px;background:var(--bg-panel-alt);color:var(--text-2);border:1px solid var(--border);cursor:pointer;transition:all .15s;}
+.chip:hover{background:var(--bg-hover);}
+.chip.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+.tabs{display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:16px;}
+.tab{padding:10px 20px;font-size:13px;color:var(--text-2);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s;}
+.tab:hover{color:var(--text-1);}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:600;}
+.data-table{width:100%;border-collapse:collapse;font-size:13px;}
+.data-table th{text-align:left;padding:10px 12px;color:var(--text-3);font-weight:500;font-size:12px;border-bottom:1px solid var(--border);background:var(--bg-panel-alt);}
+.data-table td{padding:10px 12px;border-bottom:1px solid var(--border);color:var(--text-2);}
+.data-table tr:hover td{background:var(--bg-hover);}
+.data-table .rank{width:36px;height:24px;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;}
+.rank-1{background:#fef3c7;color:#d97706;}
+.rank-2{background:#e0e7ff;color:#4f46e5;}
+.rank-3{background:#fce7f3;color:#db2777;}
+.rank-n{background:var(--bg-panel-alt);color:var(--text-3);}
+.tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500;}
+.tag-hot{background:#fef3c7;color:#d97706;}.tag-new{background:#dbeafe;color:#2563eb;}
+.tag-up{background:#dcfce7;color:#16a34a;}.tag-warn{background:#fef2f2;color:#dc2626;}
+.tag-ok{background:#f0fdf4;color:#16a34a;}.tag-info{background:#eff6ff;color:#3b82f6;}
+.tag-pending{background:#fef9c3;color:#a16207;}.tag-active{background:#dbeafe;color:#2563eb;}
+.tag-done{background:#dcfce7;color:#16a34a;}.tag-archive{background:var(--bg-panel-alt);color:var(--text-3);}
+.tag-negative{background:#fef2f2;color:#dc2626;}.tag-neutral{background:#f1f5f9;color:#64748b;}
+.tag-positive{background:#f0fdf4;color:#16a34a;}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--radius);font-size:13px;font-weight:500;transition:all .15s;}
+.btn-primary{background:var(--accent);color:#fff;}.btn-primary:hover{background:#2563eb;}
+.btn-ghost{background:transparent;color:var(--text-2);border:1px solid var(--border);}.btn-ghost:hover{background:var(--bg-hover);}
+.btn-sm{padding:4px 10px;font-size:12px;}
+.btn-danger{background:var(--accent3);color:#fff;}.btn-danger:hover{background:#dc2626;}
+.search-box{display:flex;align-items:center;gap:8px;background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:var(--radius);padding:6px 12px;max-width:320px;}
+.search-box input{border:none;background:none;outline:none;flex:1;font-size:13px;color:var(--text-1);}
+.search-box input::placeholder{color:var(--text-3);}
+.alert-list{list-style:none;}
+.alert-item{padding:10px 0;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:10px;font-size:13px;}
+.alert-item:last-child{border-bottom:none;}
+.alert-dot{width:8px;height:8px;border-radius:50%;margin-top:6px;flex-shrink:0;}
+.alert-dot.red{background:var(--accent3);}.alert-dot.amber{background:var(--accent4);}.alert-dot.blue{background:var(--accent);}
+.alert-time{color:var(--text-3);font-size:11px;margin-top:2px;}
+.card-list{display:flex;flex-direction:column;gap:12px;}
+.lead-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 20px;cursor:pointer;transition:all .15s;}
+.lead-card:hover{box-shadow:var(--shadow-md);border-color:var(--accent);}
+.lead-card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;}
+.lead-card-title{font-size:14px;font-weight:600;color:var(--text-1);}
+.lead-card-heat{display:flex;align-items:center;gap:4px;font-size:13px;font-weight:600;color:var(--accent3);}
+.lead-card-meta{display:flex;gap:12px;font-size:12px;color:var(--text-3);margin-top:8px;}
+.lead-card-sources{display:flex;gap:6px;margin-top:8px;}
+.source-tag{font-size:11px;padding:2px 8px;border-radius:4px;background:var(--bg-panel-alt);color:var(--text-2);border:1px solid var(--border);}
+.competitor-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 20px;display:flex;gap:16px;align-items:flex-start;cursor:pointer;transition:all .15s;}
+.competitor-card:hover{box-shadow:var(--shadow-md);border-color:var(--accent);}
+.competitor-logo{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:#fff;flex-shrink:0;}
+.competitor-info{flex:1;}
+.competitor-info h4{font-size:14px;font-weight:600;margin-bottom:4px;}
+.competitor-info p{font-size:12px;color:var(--text-3);margin-bottom:8px;}
+.competitor-stats{display:flex;gap:16px;}
+.competitor-stat{font-size:12px;color:var(--text-2);}
+.competitor-stat strong{color:var(--text-1);font-size:14px;display:block;}
+.report-type-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;text-align:center;cursor:pointer;transition:all .15s;}
+.report-type-card:hover{box-shadow:var(--shadow-md);border-color:var(--accent);}
+.report-type-card .report-icon{font-size:32px;margin-bottom:8px;}
+.report-type-card h4{font-size:14px;font-weight:600;margin-bottom:4px;}
+.report-type-card p{font-size:12px;color:var(--text-3);}
+.progress-bar{height:8px;background:var(--bg-panel-alt);border-radius:4px;overflow:hidden;margin-top:4px;}
+.progress-fill{height:100%;border-radius:4px;transition:width .5s;}
+.status-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px;}
+.status-dot.green{background:var(--accent5);}.status-dot.red{background:var(--accent3);}.status-dot.amber{background:var(--accent4);}
+.word-cloud{display:flex;flex-wrap:wrap;gap:8px;padding:12px 0;justify-content:center;align-items:center;}
+.word-cloud span{cursor:pointer;transition:all .15s;padding:4px 8px;border-radius:4px;}
+.word-cloud span:hover{background:var(--bg-hover);transform:scale(1.1);}
+.word-cloud span.selected{background:var(--accent);color:#fff !important;transform:scale(1.15);}
+.chart-container{width:100%;overflow:hidden;}.chart-container svg{width:100%;display:block;}
+
+/* ========== Big Screen ========== */
+.bs-wrapper{position:fixed;inset:0;background:#0a0f1e;z-index:9999;overflow-y:auto;display:none;}
+.bs-wrapper.active{display:block;}
+.bs-toolbar{position:fixed;top:0;left:0;right:0;height:48px;background:rgba(10,15,30,0.95);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:space-between;padding:0 24px;z-index:10000;border-bottom:1px solid rgba(59,130,246,0.2);}
+.bs-toolbar-left{display:flex;align-items:center;gap:16px;}
+.bs-toolbar-title{color:#e2e8f0;font-size:15px;font-weight:600;}
+.bs-toolbar-clock{color:#64748b;font-size:12px;font-variant-numeric:tabular-nums;}
+.bs-toolbar-right{display:flex;align-items:center;gap:12px;}
+.bs-toolbar select{background:#1a2340;color:#94a3b8;border:1px solid #2a3a5c;padding:4px 12px;border-radius:6px;font-size:12px;cursor:pointer;}
+.bs-btn{padding:6px 14px;border-radius:6px;font-size:12px;background:rgba(59,130,246,0.15);color:#60a5fa;border:1px solid rgba(59,130,246,0.3);cursor:pointer;transition:all .15s;}
+.bs-btn:hover{background:rgba(59,130,246,0.3);}
+.bs-btn.exit{background:rgba(239,68,68,0.15);color:#f87171;border-color:rgba(239,68,68,0.3);}
+.bs-btn.exit:hover{background:rgba(239,68,68,0.3);}
+.bs-content{padding:64px 24px 24px;min-height:100vh;background:#0a0f1e;background-image:radial-gradient(circle at 20% 50%,rgba(59,130,246,0.03) 0%,transparent 50%),radial-gradient(circle at 80% 20%,rgba(139,92,246,0.03) 0%,transparent 50%),linear-gradient(rgba(42,58,92,0.1) 1px,transparent 1px),linear-gradient(90deg,rgba(42,58,92,0.1) 1px,transparent 1px);background-size:100% 100%,100% 100%,40px 40px,40px 40px;}
+.bs-grid{display:grid;grid-template-columns:1fr 2fr 1fr;grid-template-rows:auto 1fr 1fr auto;gap:16px;min-height:calc(100vh - 88px);}
+.bs-hero{grid-column:1/-1;display:flex;gap:16px;justify-content:center;}
+.bs-hero-item{text-align:center;flex:1;padding:16px 12px;background:rgba(26,35,64,0.8);border-radius:12px;border:1px solid rgba(42,58,92,0.6);backdrop-filter:blur(4px);}
+.bs-hero-item .hero-value{font-size:32px;font-weight:800;background:linear-gradient(135deg,#60a5fa,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-variant-numeric:tabular-nums;}
+.bs-hero-item .hero-label{font-size:11px;color:#64748b;margin-top:4px;}
+.bs-left,.bs-center,.bs-right{display:flex;flex-direction:column;gap:16px;}
+.bs-bottom{grid-column:1/-1;}
+.bs-panel{background:rgba(26,35,64,0.8);border-radius:12px;border:1px solid rgba(42,58,92,0.6);padding:14px;flex:1;display:flex;flex-direction:column;backdrop-filter:blur(4px);}
+.bs-panel h4{font-size:13px;font-weight:600;margin-bottom:10px;color:#e2e8f0;}
+.bs-panel .chart-container{flex:1;}
+.scroll-list{flex:1;overflow:hidden;position:relative;}
+.scroll-list-inner{animation:scrollUp 20s linear infinite;}
+@keyframes scrollUp{0%{transform:translateY(0);}100%{transform:translateY(-50%);}}
+.scroll-item{padding:8px 0;border-bottom:1px solid rgba(42,58,92,0.4);font-size:12px;color:#94a3b8;}
+.scroll-item .scroll-time{color:#475569;font-size:10px;}
+.heatmap-timeline{display:flex;gap:2px;align-items:flex-end;height:40px;}
+.heatmap-bar{width:12px;border-radius:2px;transition:height .3s;}
+.bs-ticker{background:rgba(26,35,64,0.8);border-radius:12px;border:1px solid rgba(42,58,92,0.6);padding:10px 16px;overflow:hidden;position:relative;}
+.bs-ticker-inner{display:flex;gap:48px;animation:tickerScroll 30s linear infinite;white-space:nowrap;}
+@keyframes tickerScroll{0%{transform:translateX(0);}100%{transform:translateX(-50%);}}
+.bs-ticker-item{display:inline-flex;align-items:center;gap:8px;font-size:12px;color:#94a3b8;}
+.bs-ticker-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+
+/* Toast */
+.toast{position:fixed;top:80px;right:24px;background:var(--bg-panel);border:1px solid var(--border);border-radius:var(--radius);padding:12px 20px;box-shadow:var(--shadow-lg);font-size:13px;z-index:9999;animation:toastIn .3s ease;display:flex;align-items:center;gap:8px;max-width:360px;}
+@keyframes toastIn{from{opacity:0;transform:translateX(20px);}to{opacity:1;transform:translateX(0);}}
+.toast-icon{color:var(--accent5);font-size:16px;}
+
+/* Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9000;display:flex;align-items:center;justify-content:center;animation:fadeIn .2s;}
+.modal{background:var(--bg-panel);border-radius:var(--radius-lg);padding:24px;max-width:640px;width:90%;max-height:85vh;overflow-y:auto;box-shadow:var(--shadow-lg);}
+.modal h3{font-size:16px;font-weight:600;margin-bottom:12px;}
+.modal p{font-size:13px;color:var(--text-2);line-height:1.8;margin-bottom:16px;}
+.modal-close{float:right;font-size:20px;color:var(--text-3);cursor:pointer;}
+.modal-lg{max-width:900px;}
+
+/* Share dropdown */
+.share-dropdown{position:relative;display:inline-block;}
+.share-menu{position:absolute;top:100%;right:0;background:var(--bg-panel);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-md);min-width:160px;z-index:100;display:none;padding:4px 0;}
+.share-menu.show{display:block;}
+.share-menu-item{padding:8px 14px;font-size:12px;color:var(--text-2);cursor:pointer;display:flex;align-items:center;gap:8px;}
+.share-menu-item:hover{background:var(--bg-hover);}
+
+/* Builder */
+.builder-layout{display:grid;grid-template-columns:220px 1fr 260px;gap:16px;min-height:calc(100vh - 200px);}
+.builder-panel{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;overflow-y:auto;}
+.builder-panel h4{font-size:13px;font-weight:600;margin-bottom:12px;color:var(--text-1);}
+.builder-widget{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;cursor:pointer;transition:all .15s;font-size:13px;color:var(--text-2);}
+.builder-widget:hover{background:var(--bg-hover);border-color:var(--accent);}
+.builder-widget .widget-icon{width:28px;height:28px;border-radius:6px;background:var(--bg-panel-alt);display:flex;align-items:center;justify-content:center;font-size:14px;}
+.builder-canvas{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;min-height:500px;}
+.canvas-grid{display:grid;grid-template-columns:repeat(12,1fr);grid-auto-rows:80px;gap:8px;}
+.canvas-slot{border:2px dashed var(--border);border-radius:var(--radius);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--text-3);transition:all .15s;cursor:pointer;}
+.canvas-slot:hover{border-color:var(--accent);background:var(--bg-hover);}
+.canvas-slot.filled{border:1px solid var(--accent);background:rgba(59,130,246,0.05);position:relative;}
+.canvas-slot.filled .slot-remove{position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:50%;background:var(--accent3);color:#fff;display:none;align-items:center;justify-content:center;font-size:10px;cursor:pointer;}
+.canvas-slot.filled:hover .slot-remove{display:flex;}
+.builder-props{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;}
+.builder-props h4{font-size:13px;font-weight:600;margin-bottom:12px;color:var(--text-1);}
+.prop-group{margin-bottom:16px;}
+.prop-group label{font-size:12px;color:var(--text-3);display:block;margin-bottom:4px;}
+.prop-group input,.prop-group select{width:100%;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg-panel-alt);color:var(--text-1);}
+.prop-group select{cursor:pointer;}
+
+/* Form elements */
+.form-row{display:flex;gap:12px;margin-bottom:12px;align-items:flex-start;}
+.form-row label{font-size:13px;color:var(--text-2);min-width:80px;padding-top:6px;}
+.form-row .form-control{flex:1;}
+.form-control input,.form-control select,.form-control textarea{width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg-panel-alt);color:var(--text-1);}
+.form-control textarea{min-height:80px;resize:vertical;}
+.checkbox-group{display:flex;flex-wrap:wrap;gap:12px;}
+.checkbox-group label{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-2);cursor:pointer;}
+.checkbox-group input[type="checkbox"]{width:16px;height:16px;cursor:pointer;}
+
+/* Detail panel */
+.detail-section{margin-bottom:20px;}
+.detail-section h4{font-size:14px;font-weight:600;margin-bottom:10px;color:var(--text-1);padding-bottom:6px;border-bottom:1px solid var(--border);}
+.detail-meta{display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:13px;}
+.detail-meta-item{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border-light);}
+.detail-meta-item span:first-child{color:var(--text-3);}
+.detail-meta-item span:last-child{color:var(--text-1);font-weight:500;}
+.action-btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;}
+
+/* Responsive */
+@media(max-width:1200px){.kpi-row.cols-5{grid-template-columns:repeat(3,1fr);}.grid-2,.grid-2-1,.grid-1-2{grid-template-columns:1fr;}.bs-grid{grid-template-columns:1fr;}.builder-layout{grid-template-columns:1fr;}}
+
+/* ========== Unified Bigscreen Page ========== */
+.bs-unified-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;}
+.bs-unified-header .header-info h3{font-size:18px;font-weight:700;margin-bottom:4px;}
+.bs-unified-header .header-info p{font-size:13px;color:var(--text-3);}
+.bs-unified-header .header-actions{display:flex;gap:8px;}
+.bs-template-bar{display:flex;gap:10px;margin-bottom:20px;overflow-x:auto;padding-bottom:8px;}
+.bs-template-chip{padding:8px 16px;border-radius:20px;font-size:13px;background:var(--bg-panel-alt);color:var(--text-2);border:1px solid var(--border);cursor:pointer;transition:all .15s;white-space:nowrap;display:flex;align-items:center;gap:6px;}
+.bs-template-chip:hover{background:var(--bg-hover);border-color:var(--accent);}
+.bs-template-chip.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+.bs-template-chip .chip-icon{font-size:14px;}
+.bs-unified-layout{display:grid;grid-template-columns:1fr 380px;gap:20px;min-height:calc(100vh - 280px);}
+.bs-builder-panel{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;overflow-y:auto;max-height:calc(100vh - 280px);}
+.bs-builder-panel h4{font-size:13px;font-weight:600;margin-bottom:12px;color:var(--text-1);}
+.bs-component-library{margin-bottom:16px;}
+.bs-component-library.collapsed .bs-component-grid{display:none;}
+.bs-component-toggle{display:flex;justify-content:space-between;align-items:center;cursor:pointer;padding:8px 0;}
+.bs-component-toggle h4{margin-bottom:0;}
+.bs-component-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px;}
+.bs-mini-widget{padding:10px 8px;border:1px solid var(--border);border-radius:var(--radius);text-align:center;cursor:pointer;transition:all .15s;font-size:11px;color:var(--text-2);}
+.bs-mini-widget:hover{background:var(--bg-hover);border-color:var(--accent);}
+.bs-mini-widget .widget-icon{font-size:18px;display:block;margin-bottom:4px;}
+.bs-canvas-area{margin-top:16px;}
+.bs-canvas-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+.bs-canvas-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+.bs-canvas-slot{border:2px dashed var(--border);border-radius:var(--radius);min-height:140px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:12px;color:var(--text-3);transition:all .15s;cursor:pointer;padding:8px;position:relative;}
+.bs-canvas-slot:hover{border-color:var(--accent);background:var(--bg-hover);}
+.bs-canvas-slot.filled{border:1px solid var(--accent);background:rgba(59,130,246,0.03);padding:10px;}
+.bs-canvas-slot.filled .slot-preview{width:100%;height:80px;margin-bottom:6px;display:flex;align-items:center;justify-content:center;}
+.bs-canvas-slot.filled .slot-title{font-size:11px;font-weight:600;color:var(--text-1);text-align:center;margin-bottom:4px;cursor:text;}
+.bs-canvas-slot.filled .slot-remove{position:absolute;top:4px;right:4px;width:18px;height:18px;border-radius:50%;background:var(--accent3);color:#fff;display:none;align-items:center;justify-content:center;font-size:10px;cursor:pointer;line-height:1;}
+.bs-canvas-slot.filled:hover .slot-remove{display:flex;}
+.bs-canvas-slot.filled .slot-drag{position:absolute;bottom:4px;right:4px;font-size:10px;color:var(--text-4);cursor:move;}
+.bs-canvas-count{font-size:12px;color:var(--text-3);margin-top:12px;text-align:center;}
+.bs-preview-panel{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;display:flex;flex-direction:column;gap:16px;max-height:calc(100vh - 280px);overflow-y:auto;}
+.bs-preview-box{background:#0a0f1e;border-radius:8px;aspect-ratio:16/9;position:relative;overflow:hidden;border:1px solid rgba(42,58,92,0.6);}
+.bs-preview-box .preview-grid{display:grid;gap:4px;padding:8px;height:100%;grid-template-columns:repeat(4,1fr);grid-template-rows:auto 1fr 1fr;}
+.bs-preview-box .preview-widget{background:rgba(59,130,246,0.15);border-radius:4px;border:1px solid rgba(59,130,246,0.2);}
+.bs-settings-section h4{font-size:13px;font-weight:600;margin-bottom:10px;color:var(--text-1);}
+.bs-settings-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+.bs-settings-row label{font-size:12px;color:var(--text-2);}
+.bs-settings-row select,.bs-settings-row input{padding:5px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;color:var(--text-1);background:var(--bg-panel-alt);min-width:120px;}
+.bs-template-info{font-size:12px;color:var(--text-3);}
+.bs-template-info div{padding:4px 0;border-bottom:1px solid var(--border-light);}
+.bs-template-info div:last-child{border-bottom:none;}
+.bs-template-info span{color:var(--text-1);font-weight:500;float:right;}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">封</div>
+      <div><span class="logo-text">封面新闻</span><span class="logo-sub">全网线索可视化展示系统</span></div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">数据监控</div>
+      <div class="nav-item active" data-page="dashboard"><span class="nav-icon">📊</span>线索总览</div>
+      <div class="nav-item" data-page="competitor"><span class="nav-icon">👁</span>竞品监控</div>
+      <div class="nav-item" data-page="hottopic"><span class="nav-icon">🔥</span>热搜追踪</div>
+      <div class="nav-section-label">线索工作台</div>
+      <div class="nav-item" data-page="leads"><span class="nav-icon">📋</span>线索管理</div>
+      <div class="nav-item" data-page="reports"><span class="nav-icon">📝</span>报告中心</div>
+      <div class="nav-section-label">可视化展示</div>
+      <div class="nav-item" data-page="bigscreen"><span class="nav-icon">🖥</span>可视化大屏</div>
+      <div class="nav-section-label">系统配置</div>
+      <div class="nav-item" data-page="datasource"><span class="nav-icon">📡</span>数据源管理</div>
+      <div class="nav-item" data-page="alerts"><span class="nav-icon">🔔</span>告警中心</div>
+      <div class="nav-item" data-page="kpi"><span class="nav-icon">📊</span>KPI 监控</div>
+      <div class="nav-item" data-page="settings"><span class="nav-icon">⚙</span>系统管理</div>
+    </nav>
+    <div class="sidebar-footer">v3.0.0 · © 2026 封面新闻</div>
+  </aside>
+
+  <div class="main" id="mainArea">
+    <header class="topbar">
+      <div class="topbar-left"><h2 id="pageTitle">线索总览</h2></div>
+      <div class="topbar-right">
+        <span class="topbar-clock" id="clock"></span>
+        <span class="topbar-badge" id="alertBadge">5 条预警</span>
+        <div class="topbar-user">
+          <div class="topbar-avatar">张</div>
+          <span style="font-size:13px;">张编辑</span>
+        </div>
+      </div>
+    </header>
+    <div class="content" id="contentArea">
+
+      <!-- Page 1: 线索总览 -->
+      <div class="page active" id="page-dashboard">
+        <div class="kpi-row cols-5">
+          <div class="kpi-card"><div class="kpi-label">📊 今日线索总量</div><div class="kpi-value" id="kpi-total">15,283</div><div class="kpi-change up">↑ 14.2% 较昨日</div></div>
+          <div class="kpi-card"><div class="kpi-label">🔥 热搜命中数</div><div class="kpi-value">428</div><div class="kpi-change up">↑ 9.5%</div></div>
+          <div class="kpi-card"><div class="kpi-label">⚠ 负面预警</div><div class="kpi-value" style="color:var(--accent3)">18</div><div class="kpi-change down">↑ 3 条</div></div>
+          <div class="kpi-card"><div class="kpi-label">📈 传播影响力</div><div class="kpi-value">96.7</div><div class="kpi-change up">↑ 4.2</div></div>
+          <div class="kpi-card"><div class="kpi-label">🏢 竞品动态</div><div class="kpi-value">183</div><div class="kpi-change up">↑ 22 条</div></div>
+        </div>
+        <div class="grid-2">
+          <div class="panel">
+            <div class="panel-header"><h3>7日线索趋势</h3><div class="panel-filter"><button class="active" onclick="switchTrendRange('7d',this)">7天</button><button onclick="switchTrendRange('14d',this)">14天</button><button onclick="switchTrendRange('30d',this)">30天</button></div></div>
+            <div class="panel-body"><div class="chart-container" id="chart-trend-7d"></div></div>
+          </div>
+          <div class="panel">
+            <div class="panel-header"><h3>热词云</h3></div>
+            <div class="panel-body"><div class="word-cloud" id="wordCloud1"></div></div>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="panel">
+            <div class="panel-header"><h3>线索来源分布</h3><div class="panel-filter" id="sourceFilter"><button class="active" data-dim="platform">按平台</button><button data-dim="region">按地区</button><button data-dim="industry">按行业</button></div></div>
+            <div class="panel-body"><div class="chart-container" id="chart-source"></div></div>
+          </div>
+          <div class="panel">
+            <div class="panel-header"><h3>情感分布</h3></div>
+            <div class="panel-body"><div class="chart-container" id="chart-sentiment"></div></div>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="panel">
+            <div class="panel-header"><h3>24h 热度时间热力图</h3></div>
+            <div class="panel-body"><div class="chart-container" id="chart-heatmap"></div></div>
+          </div>
+          <div class="panel">
+            <div class="panel-header"><h3>实时告警</h3></div>
+            <div class="panel-body">
+              <ul class="alert-list" id="alertList">
+                <li class="alert-item"><span class="alert-dot red"></span><div><div>「低空经济试点」话题登上微博热搜第5位，热度持续攀升</div><div class="alert-time">3 分钟前</div></div></li>
+                <li class="alert-item"><span class="alert-dot red"></span><div><div>澎湃新闻发布成渝经济圈深度报道，传播量激增</div><div class="alert-time">12 分钟前</div></div></li>
+                <li class="alert-item"><span class="alert-dot amber"></span><div><div>抖音平台出现新能源汽车行业负面话题，热度上升中</div><div class="alert-time">28 分钟前</div></div></li>
+                <li class="alert-item"><span class="alert-dot blue"></span><div><div>知乎热榜「AI大模型应用落地」话题与我方重点报道方向相关</div><div class="alert-time">45 分钟前</div></div></li>
+                <li class="alert-item"><span class="alert-dot amber"></span><div><div>百度指数显示"数字人民币"搜索量异常波动，较昨日增长320%</div><div class="alert-time">1 小时前</div></div></li>
+                <li class="alert-item"><span class="alert-dot blue"></span><div><div>三星堆考古新发现引发全网关注，多平台同步热搜</div><div class="alert-time">2 小时前</div></div></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Page 2: 热搜追踪 -->
+      <div class="page" id="page-hottopic">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+          <div class="chip-group" id="platformChips" style="margin-bottom:0;">
+            <span class="chip active" data-platform="all">全部</span>
+            <span class="chip" data-platform="weibo">微博</span>
+            <span class="chip" data-platform="baidu">百度</span>
+            <span class="chip" data-platform="douyin">抖音</span>
+            <span class="chip" data-platform="zhihu">知乎</span>
+            <span class="chip" data-platform="toutiao">头条</span>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="openKeywordManageModal()">🔑 关键词管理</button>
+        </div>
+        <div class="tabs" id="hotSearchTabs" style="margin-bottom:16px;">
+          <div class="tab active" data-htab="table">热搜榜单</div>
+          <div class="tab" data-htab="follow">关注列表</div>
+        </div>
+        <div id="hotSearchTabTable">
+        <div class="grid-2-1">
+          <div class="panel">
+            <div class="panel-header"><h3>实时热搜 TOP 10</h3><span style="font-size:12px;color:var(--text-3)">更新时间: 刚刚</span></div>
+            <div class="panel-body">
+              <table class="data-table" id="hotTopicTable">
+                <thead><tr><th>排名</th><th>关键词</th><th>平台</th><th>热度值</th><th>趋势</th><th>状态</th><th>操作</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-header"><h3>热搜演变时间线</h3></div>
+            <div class="panel-body" id="hotTimeline" style="font-size:13px;">
+              <div style="border-left:2px solid var(--accent);padding-left:16px;margin-left:8px;">
+                <div style="margin-bottom:16px;"><div style="font-weight:600;color:var(--text-1);">07:30 话题萌芽</div><div style="font-size:12px;color:var(--text-3);margin-top:2px;">知乎出现首个关于低空经济的热门提问</div></div>
+                <div style="margin-bottom:16px;"><div style="font-weight:600;color:var(--text-1);">09:15 热度攀升</div><div style="font-size:12px;color:var(--text-3);margin-top:2px;">微博多位财经大V转发成都低空经济试点消息</div></div>
+                <div style="margin-bottom:16px;"><div style="font-weight:600;color:var(--text-1);">11:00 登上热搜</div><div style="font-size:12px;color:var(--text-3);margin-top:2px;">进入微博热搜榜 TOP 20，百度搜索指数飙升</div></div>
+                <div style="margin-bottom:16px;"><div style="font-weight:600;color:var(--text-1);">13:30 全网扩散</div><div style="font-size:12px;color:var(--text-3);margin-top:2px;">抖音、头条同步上榜，界面新闻发布深度分析</div></div>
+                <div style="margin-bottom:16px;"><div style="font-weight:600;color:var(--text-1);">15:00 媒体跟进</div><div style="font-size:12px;color:var(--text-3);margin-top:2px;">澎湃新闻、红星新闻相继发布相关报道</div></div>
+                <div><div style="font-weight:600;color:var(--accent);">16:30 当前</div><div style="font-size:12px;color:var(--text-3);margin-top:2px;">微博热搜第5位，热度 856万，仍在上升</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-header"><h3 id="hotTrendTitle">关键词热度趋势 (24h) - 低空经济</h3></div>
+          <div class="panel-body"><div class="chart-container" id="chart-keyword-trend"></div></div>
+        </div>
+        </div>
+        <div id="hotSearchTabFollow" style="display:none;">
+          <div class="panel">
+            <div class="panel-header"><h3>我的关注关键词</h3><span style="font-size:12px;color:var(--text-3);">共 6 个关键词</span></div>
+            <div class="panel-body">
+              <table class="data-table">
+                <thead><tr><th>关键词</th><th>分组</th><th>当前热度</th><th>最高排名</th><th>关注时间</th><th>状态</th><th>操作</th></tr></thead>
+                <tbody>
+                  <tr><td style="font-weight:600;">低空经济</td><td><span class="tag tag-info">产业</span></td><td style="color:var(--accent3);font-weight:600;">856万</td><td>微博 #5</td><td>11-08</td><td><span class="tag tag-up">🔥 热门</span></td><td><button class="btn btn-ghost btn-sm" onclick="showToast('已取消关注')">取消关注</button></td></tr>
+                  <tr><td style="font-weight:600;">三星堆考古</td><td><span class="tag tag-hot">文化</span></td><td style="color:var(--accent3);font-weight:600;">723万</td><td>微博 #2</td><td>11-07</td><td><span class="tag tag-up">🔥 热门</span></td><td><button class="btn btn-ghost btn-sm" onclick="showToast('已取消关注')">取消关注</button></td></tr>
+                  <tr><td style="font-weight:600;">AI大模型</td><td><span class="tag tag-info">科技</span></td><td style="font-weight:600;">651万</td><td>知乎 #3</td><td>11-05</td><td><span class="tag tag-up">📈 上升</span></td><td><button class="btn btn-ghost btn-sm" onclick="showToast('已取消关注')">取消关注</button></td></tr>
+                  <tr><td style="font-weight:600;">数字人民币</td><td><span class="tag tag-active">财经</span></td><td style="font-weight:600;">512万</td><td>微博 #8</td><td>11-03</td><td><span class="tag tag-ok">✓ 稳定</span></td><td><button class="btn btn-ghost btn-sm" onclick="showToast('已取消关注')">取消关注</button></td></tr>
+                  <tr><td style="font-weight:600;">新能源汽车</td><td><span class="tag tag-info">产业</span></td><td style="font-weight:600;">589万</td><td>百度 #4</td><td>10-28</td><td><span class="tag tag-up">📈 上升</span></td><td><button class="btn btn-ghost btn-sm" onclick="showToast('已取消关注')">取消关注</button></td></tr>
+                  <tr><td style="font-weight:600;">成渝经济圈</td><td><span class="tag tag-active">财经</span></td><td style="font-weight:600;">478万</td><td>头条 #6</td><td>10-25</td><td><span class="tag tag-ok">✓ 稳定</span></td><td><button class="btn btn-ghost btn-sm" onclick="showToast('已取消关注')">取消关注</button></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Page 3: 竞品监控 -->
+      <div class="page" id="page-competitor">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+          <div></div>
+          <button class="btn btn-primary btn-sm" onclick="openCompetitorManageModal()">🏢 管理竞品</button>
+        </div>
+        <div class="kpi-row cols-4">
+          <div class="kpi-card"><div class="kpi-label">🏢 监控竞品数</div><div class="kpi-value">6</div><div class="kpi-change" style="color:var(--text-3)">核心竞品</div></div>
+          <div class="kpi-card"><div class="kpi-label">📰 今日竞品发稿</div><div class="kpi-value">127</div><div class="kpi-change up">↑ 18.7%</div></div>
+          <div class="kpi-card"><div class="kpi-label">🔥 竞品热搜命中</div><div class="kpi-value">9</div><div class="kpi-change up">↑ 4 条</div></div>
+          <div class="kpi-card"><div class="kpi-label">⚠ 重要预警</div><div class="kpi-value" style="color:var(--accent4)">3</div><div class="kpi-change down">需关注</div></div>
+        </div>
+        <div class="tabs" id="competitorTabs" style="margin-bottom:16px;">
+          <div class="tab active" data-ctab="overview">竞品概览</div>
+          <div class="tab" data-ctab="alerts">预警记录</div>
+        </div>
+        <div id="competitorTabOverview">
+        <div class="panel">
+          <div class="panel-header"><h3>竞品列表</h3></div>
+          <div class="panel-body"><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px;" id="competitorCards"></div></div>
+        </div>
+        <div class="grid-2">
+          <div class="panel">
+            <div class="panel-header"><h3>声量对比 (7日)</h3></div>
+            <div class="panel-body"><div class="chart-container" id="chart-compete-volume"></div></div>
+          </div>
+          <div class="panel">
+            <div class="panel-header"><h3>竞品最新动态</h3></div>
+            <div class="panel-body">
+              <table class="data-table" id="competitorNewsTable">
+                <thead><tr><th>时间</th><th>竞品</th><th>标题</th><th>来源</th><th>传播</th><th>情感</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        </div>
+        <div id="competitorTabAlerts" style="display:none;">
+          <div class="panel">
+            <div class="panel-header"><h3>竞品预警记录</h3><div style="display:flex;gap:8px;"><select style="padding:4px 8px;border:1px solid var(--border);border-radius:var(--radius);font-size:12px;color:var(--text-2);"><option>全部竞品</option><option>澎湃新闻</option><option>红星新闻</option><option>界面新闻</option></select><button class="btn btn-ghost btn-sm">刷新</button></div></div>
+            <div class="panel-body">
+              <table class="data-table">
+                <thead><tr><th>时间</th><th>竞品</th><th>预警类型</th><th>预警内容</th><th>级别</th><th>状态</th><th>操作</th></tr></thead>
+                <tbody>
+                  <tr><td>16:32</td><td style="font-weight:600;">澎湃新闻</td><td><span class="tag tag-hot">发稿量</span></td><td>澎湃新闻今日发稿45篇，超过阈值40篇</td><td><span class="tag tag-warn">严重</span></td><td><span class="tag tag-pending">待处理</span></td><td><button class="btn btn-ghost btn-sm" onclick="showToast('已处理')">处理</button></td></tr>
+                  <tr><td>15:45</td><td style="font-weight:600;">红星新闻</td><td><span class="tag tag-up">热搜</span></td><td>红星新闻「三星堆6号坑」报道登上微博热搜第2位</td><td><span class="tag tag-warn">严重</span></td><td><span class="tag tag-pending">待处理</span></td><td><button class="btn btn-ghost btn-sm" onclick="showToast('已处理')">处理</button></td></tr>
+                  <tr><td>14:20</td><td style="font-weight:600;">界面新闻</td><td><span class="tag tag-info">关键词</span></td><td>界面新闻发布含关注关键词「新能源汽车」的报道</td><td><span class="tag tag-new">通知</span></td><td><span class="tag tag-done">已处理</span></td><td><button class="btn btn-ghost btn-sm" onclick="showToast('已忽略')">忽略</button></td></tr>
+                  <tr><td>13:15</td><td style="font-weight:600;">南方都市报</td><td><span class="tag tag-hot">发稿量</span></td><td>南方都市报今日发稿41篇，超过阈值40篇</td><td><span class="tag tag-pending">预警</span></td><td><span class="tag tag-done">已处理</span></td><td><button class="btn btn-ghost btn-sm" onclick="showToast('已忽略')">忽略</button></td></tr>
+                  <tr><td>12:30</td><td style="font-weight:600;">新京报</td><td><span class="tag tag-info">关键词</span></td><td>新京报发布含关注关键词「AI芯片」的深度报道</td><td><span class="tag tag-new">通知</span></td><td><span class="tag tag-done">已处理</span></td><td><button class="btn btn-ghost btn-sm" onclick="showToast('已忽略')">忽略</button></td></tr>
+                  <tr><td>11:00</td><td style="font-weight:600;">观察者网</td><td><span class="tag tag-up">热搜</span></td><td>观察者网「中美AI芯片竞争」引发全网热议</td><td><span class="tag tag-pending">预警</span></td><td><span class="tag tag-pending">待处理</span></td><td><button class="btn btn-ghost btn-sm" onclick="showToast('已处理')">处理</button></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Page 4: 线索管理 -->
+      <div class="page" id="page-leads">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+          <h3 style="font-size:16px;">线索管理</h3>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-ghost btn-sm" onclick="openLeadImportModal()">📥 线索导入</button>
+            <button class="btn btn-primary btn-sm" onclick="showToast('新建线索功能开发中')">+ 新建线索</button>
+          </div>
+        </div>
+        <div class="tabs" id="leadTabs">
+          <div class="tab active" data-tab="all">全部线索</div>
+          <div class="tab" data-tab="pending">待跟进</div>
+          <div class="tab" data-tab="active">跟进中</div>
+          <div class="tab" data-tab="converted">已转化</div>
+          <div class="tab" data-tab="archived">已归档</div>
+        </div>
+        <div style="display:flex;gap:12px;margin-bottom:16px;align-items:center;flex-wrap:wrap;">
+          <div class="search-box"><span>🔍</span><input placeholder="搜索线索标题、关键词..." id="leadSearch" /></div>
+          <div class="chip-group" style="margin-bottom:0;"><span class="chip active">全部类型</span><span class="chip">热点</span><span class="chip">突发</span><span class="chip">趋势</span><span class="chip">行业</span></div>
+          <select style="padding:6px 12px;border-radius:var(--radius);border:1px solid var(--border);font-size:13px;color:var(--text-2);background:var(--bg-panel);"><option>全部来源</option><option>微博</option><option>百度</option><option>抖音</option><option>知乎</option><option>头条</option></select>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:16px;padding:10px 14px;background:var(--bg-panel-alt);border-radius:var(--radius);border:1px solid var(--border);align-items:center;">
+          <span style="font-size:13px;color:var(--text-2);margin-right:8px;">批量操作：</span>
+          <button class="btn btn-ghost btn-sm" onclick="showToast('已批量标记跟进')">📌 批量标记跟进</button>
+          <button class="btn btn-ghost btn-sm" onclick="showToast('批量分配功能')">👤 批量分配</button>
+          <button class="btn btn-ghost btn-sm" onclick="showToast('已批量导出')">📥 批量导出</button>
+          <button class="btn btn-ghost btn-sm" onclick="showToast('已批量归档')">📦 批量归档</button>
+          <span style="margin-left:auto;font-size:12px;color:var(--text-3);">已选 0 条</span>
+        </div>
+        <div class="grid-2-1">
+          <div>
+            <div class="card-list" id="leadCards"></div>
+          </div>
+          <div>
+            <div class="panel">
+              <div class="panel-header"><h3>线索统计</h3></div>
+              <div class="panel-body">
+                <div style="margin-bottom:14px;"><div style="display:flex;justify-content:space-between;font-size:13px;"><span>今日新增</span><strong style="color:var(--accent)">53</strong></div></div>
+                <div style="margin-bottom:14px;"><div style="display:flex;justify-content:space-between;font-size:13px;"><span>待跟进</span><strong style="color:var(--accent4)">21</strong></div></div>
+                <div style="margin-bottom:14px;"><div style="display:flex;justify-content:space-between;font-size:13px;"><span>跟进中</span><strong style="color:var(--accent)">15</strong></div></div>
+                <div style="margin-bottom:14px;"><div style="display:flex;justify-content:space-between;font-size:13px;"><span>已转化</span><strong style="color:var(--accent5)">11</strong></div></div>
+                <div><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;"><span>转化率</span><strong>46.2%</strong></div><div class="progress-bar"><div class="progress-fill" style="width:46.2%;background:var(--accent5);"></div></div></div>
+              </div>
+            </div>
+            <div class="panel">
+              <div class="panel-header"><h3>线索来源占比</h3></div>
+              <div class="panel-body"><div class="chart-container" id="chart-lead-source"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Page 5: 可视化大屏 (Unified: Builder + Preview) -->
+      <div class="page" id="page-bigscreen">
+        <div class="bs-unified-header">
+          <div class="header-info">
+            <h3>🖥 可视化大屏</h3>
+            <p>搭建并预览数据大屏，支持模板保存与实时预览</p>
+          </div>
+          <div class="header-actions">
+            <button class="btn btn-primary" onclick="openBigscreenInNewTab()">🖥 大屏预览</button>
+            <button class="btn btn-ghost" onclick="saveTemplate()">💾 保存模板</button>
+          </div>
+        </div>
+
+        <!-- Template Bar -->
+        <div class="bs-template-bar" id="bsTemplateBar">
+          <div class="bs-template-chip active" data-tpl="overview" onclick="loadBuiltinTemplate(this,'overview')">
+            <span class="chip-icon">📊</span>线索总览模板
+          </div>
+          <div class="bs-template-chip" data-tpl="competitor" onclick="loadBuiltinTemplate(this,'competitor')">
+            <span class="chip-icon">🏢</span>竞品分析模板
+          </div>
+          <div class="bs-template-chip" data-tpl="hottopic" onclick="loadBuiltinTemplate(this,'hottopic')">
+            <span class="chip-icon">🔥</span>热搜追踪模板
+          </div>
+          <div id="bsCustomTemplateChips"></div>
+          <div class="bs-template-chip" onclick="createNewTemplate()" style="border-style:dashed;">
+            <span class="chip-icon">+</span>新建模板
+          </div>
+        </div>
+
+        <!-- Main Layout: Builder + Preview -->
+        <div class="bs-unified-layout">
+          <!-- LEFT: Builder -->
+          <div class="bs-builder-panel">
+            <div class="bs-component-library" id="bsComponentLibrary">
+              <div class="bs-component-toggle" onclick="toggleComponentLibrary()">
+                <h4>组件库</h4>
+                <span id="componentToggleIcon" style="font-size:12px;color:var(--text-3);">▼</span>
+              </div>
+              <div class="bs-component-grid" id="bsComponentGrid"></div>
+            </div>
+
+            <div class="bs-canvas-area">
+              <div class="bs-canvas-header">
+                <span style="font-size:13px;color:var(--text-3);">画布 (6行 × 4列)</span>
+                <button class="btn btn-ghost btn-sm" onclick="clearCanvas()">🗑 清空</button>
+              </div>
+              <div class="bs-canvas-grid" id="bsCanvasGrid"></div>
+              <div class="bs-canvas-count" id="bsCanvasCount">画布已放置 0 个组件</div>
+            </div>
+          </div>
+
+          <!-- RIGHT: Preview & Settings -->
+          <div class="bs-preview-panel">
+            <div>
+              <h4 style="font-size:13px;font-weight:600;margin-bottom:10px;">实时预览</h4>
+              <div class="bs-preview-box" id="bsPreviewBox">
+                <div class="preview-grid" id="bsPreviewGrid"></div>
+              </div>
+            </div>
+
+            <div class="bs-settings-section">
+              <h4>显示设置</h4>
+              <div class="bs-settings-row">
+                <label>数据刷新间隔</label>
+                <select id="bsRefreshInterval">
+                  <option value="30">30秒</option>
+                  <option value="60" selected>1分钟</option>
+                  <option value="300">5分钟</option>
+                  <option value="manual">手动</option>
+                </select>
+              </div>
+              <div class="bs-settings-row">
+                <label>自动轮播</label>
+                <select id="bsAutoRotate">
+                  <option value="off">关闭</option>
+                  <option value="10" selected>每10秒</option>
+                  <option value="30">每30秒</option>
+                </select>
+              </div>
+              <div class="bs-settings-row">
+                <label>背景主题</label>
+                <select id="bsTheme">
+                  <option value="deepblue">深蓝</option>
+                  <option value="black">纯黑</option>
+                  <option value="gray">深灰</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="bs-settings-section">
+              <h4>模板信息</h4>
+              <div class="bs-settings-row">
+                <label>模板名称</label>
+                <input type="text" id="bsTemplateName" value="线索总览模板" />
+              </div>
+              <div class="bs-template-info">
+                <div>创建时间 <span id="bsTemplateCreated">2026-11-10</span></div>
+                <div>组件数量 <span id="bsTemplateWidgetCount">0</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Page 6: 报告中心 -->
+      <div class="page" id="page-reports">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+          <h3 style="font-size:16px;">报告中心</h3>
+          <button class="btn btn-primary" onclick="openReportModal()">📝 生成报告</button>
+        </div>
+        <div class="grid-3" style="margin-bottom:20px;">
+          <div class="report-type-card" onclick="openReportModal('daily')"><div class="report-icon">📋</div><h4>日报</h4><p>每日线索汇总分析<br/>自动生成 · 每日 08:00</p></div>
+          <div class="report-type-card" onclick="openReportModal('weekly')"><div class="report-icon">📊</div><h4>周报</h4><p>周度趋势与竞品对比<br/>自动生成 · 每周一 09:00</p></div>
+          <div class="report-type-card" onclick="openReportModal('special')"><div class="report-icon">📑</div><h4>专题报告</h4><p>重大事件专题分析<br/>按需生成</p></div>
+        </div>
+        <div class="panel">
+          <div class="panel-header"><h3>近期报告</h3></div>
+          <div class="panel-body">
+            <table class="data-table">
+              <thead><tr><th>报告名称</th><th>类型</th><th>生成时间</th><th>状态</th><th>操作</th></tr></thead>
+              <tbody>
+                <tr><td>2026年11月9日 线索日报</td><td><span class="tag tag-info">日报</span></td><td>11-09 08:00</td><td><span class="tag tag-ok">已生成</span></td><td><button class="btn btn-ghost btn-sm" onclick="generateReport('daily','2026-11-09','2026-11-09')">查看</button> <div class="share-dropdown"><button class="btn btn-ghost btn-sm" onclick="toggleShareMenu(this)">分享 ▾</button><div class="share-menu"><div class="share-menu-item">👤 王记者</div><div class="share-menu-item">👤 李编辑</div><div class="share-menu-item">👤 赵主任</div><div class="share-menu-item">👥 线索分析组</div></div></div></td></tr>
+                <tr><td>第44周 线索周报</td><td><span class="tag tag-info">周报</span></td><td>11-03 09:00</td><td><span class="tag tag-ok">已生成</span></td><td><button class="btn btn-ghost btn-sm" onclick="generateReport('weekly','2026-11-03','2026-11-09')">查看</button> <div class="share-dropdown"><button class="btn btn-ghost btn-sm" onclick="toggleShareMenu(this)">分享 ▾</button><div class="share-menu"><div class="share-menu-item">👤 王记者</div><div class="share-menu-item">👤 李编辑</div><div class="share-menu-item">👥 全体</div></div></div></td></tr>
+                <tr><td>"AI大模型应用落地"专题分析</td><td><span class="tag tag-hot">专题</span></td><td>11-08 14:30</td><td><span class="tag tag-ok">已生成</span></td><td><button class="btn btn-ghost btn-sm" onclick="generateReport('special','2026-10-01','2026-11-08')">查看</button> <div class="share-dropdown"><button class="btn btn-ghost btn-sm" onclick="toggleShareMenu(this)">分享 ▾</button><div class="share-menu"><div class="share-menu-item">👤 赵主任</div><div class="share-menu-item">👥 管理层</div></div></div></td></tr>
+                <tr><td>2026年11月8日 线索日报</td><td><span class="tag tag-info">日报</span></td><td>11-08 08:00</td><td><span class="tag tag-ok">已生成</span></td><td><button class="btn btn-ghost btn-sm" onclick="generateReport('daily','2026-11-08','2026-11-08')">查看</button> <div class="share-dropdown"><button class="btn btn-ghost btn-sm" onclick="toggleShareMenu(this)">分享 ▾</button><div class="share-menu"><div class="share-menu-item">👤 王记者</div><div class="share-menu-item">👤 李编辑</div></div></div></td></tr>
+                <tr><td>10月线索月报</td><td><span class="tag tag-hot">月报</span></td><td>11-01 10:00</td><td><span class="tag tag-ok">已生成</span></td><td><button class="btn btn-ghost btn-sm" onclick="generateReport('monthly','2026-10-01','2026-10-31')">查看</button> <div class="share-dropdown"><button class="btn btn-ghost btn-sm" onclick="toggleShareMenu(this)">分享 ▾</button><div class="share-menu"><div class="share-menu-item">👤 赵主任</div><div class="share-menu-item">👥 管理层</div></div></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-header"><h3>历史数据对比</h3></div>
+          <div class="panel-body">
+            <div style="display:flex;gap:16px;margin-bottom:16px;align-items:center;">
+              <div><label style="font-size:12px;color:var(--text-3);display:block;margin-bottom:4px;">时间段 A</label><input type="date" value="2026-10-01" style="padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px;"> — <input type="date" value="2026-10-31" style="padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px;"></div>
+              <div><label style="font-size:12px;color:var(--text-3);display:block;margin-bottom:4px;">时间段 B</label><input type="date" value="2026-11-01" style="padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px;"> — <input type="date" value="2026-11-09" style="padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px;"></div>
+              <button class="btn btn-primary btn-sm" style="margin-top:18px;">对比分析</button>
+            </div>
+            <div class="chart-container" id="chart-compare"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Page 8: 数据源管理 (standalone) -->
+      <div class="page" id="page-datasource">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+          <div>
+            <h3 style="font-size:16px;">数据源管理</h3>
+            <p style="font-size:13px;color:var(--text-3);margin-top:4px;">管理全网线索数据采集源，监控采集状态与数据质量</p>
+          </div>
+          <button class="btn btn-primary" onclick="showToast('添加数据源功能开发中')">+ 添加数据源</button>
+        </div>
+        <div class="kpi-row cols-4">
+          <div class="kpi-card"><div class="kpi-label">📡 数据源总数</div><div class="kpi-value">12</div><div class="kpi-change" style="color:var(--text-3)">个数据源</div></div>
+          <div class="kpi-card"><div class="kpi-label">✅ 正常运行</div><div class="kpi-value" style="color:var(--accent5)">10</div><div class="kpi-change up">运行稳定</div></div>
+          <div class="kpi-card"><div class="kpi-label">⚠ 异常告警</div><div class="kpi-value" style="color:var(--accent4)">2</div><div class="kpi-change down">需关注</div></div>
+          <div class="kpi-card"><div class="kpi-label">📊 今日采集量</div><div class="kpi-value">15,284</div><div class="kpi-change up">↑ 12.3%</div></div>
+        </div>
+        <div class="panel">
+          <div class="panel-header"><h3>数据源列表</h3></div>
+          <div class="panel-body" style="overflow-x:auto;">
+            <table class="data-table">
+              <thead><tr><th>数据源名称</th><th>采集方式</th><th>采集内容</th><th>更新频率</th><th>上次采集</th><th>今日采集量</th><th>状态</th><th>操作</th></tr></thead>
+              <tbody>
+                <tr><td style="font-weight:600;">百度热搜</td><td>热搜榜单</td><td>热搜关键词、排名、热度值</td><td>5分钟</td><td>2分钟前</td><td>2,880</td><td><span class="tag tag-ok">正常</span></td><td><button class="btn btn-ghost btn-sm">编辑</button> <button class="btn btn-ghost btn-sm">测试</button> <button class="btn btn-ghost btn-sm">日志</button></td></tr>
+                <tr><td style="font-weight:600;">微博热搜</td><td>热搜榜单</td><td>热搜话题、排名、讨论量</td><td>5分钟</td><td>1分钟前</td><td>4,120</td><td><span class="tag tag-ok">正常</span></td><td><button class="btn btn-ghost btn-sm">编辑</button> <button class="btn btn-ghost btn-sm">测试</button> <button class="btn btn-ghost btn-sm">日志</button></td></tr>
+                <tr><td style="font-weight:600;">封面新闻APP</td><td>APP推送</td><td>推送新闻标题、正文、分类</td><td>实时</td><td>刚刚</td><td>856</td><td><span class="tag tag-ok">正常</span></td><td><button class="btn btn-ghost btn-sm">编辑</button> <button class="btn btn-ghost btn-sm">测试</button> <button class="btn btn-ghost btn-sm">日志</button></td></tr>
+                <tr><td style="font-weight:600;">澎湃新闻APP</td><td>APP推送</td><td>竞品推送新闻、标题、时间</td><td>实时</td><td>3分钟前</td><td>1,024</td><td><span class="tag tag-ok">正常</span></td><td><button class="btn btn-ghost btn-sm">编辑</button> <button class="btn btn-ghost btn-sm">测试</button> <button class="btn btn-ghost btn-sm">日志</button></td></tr>
+                <tr><td style="font-weight:600;">红星新闻APP</td><td>APP推送</td><td>竞品推送新闻、标题、时间</td><td>实时</td><td>5分钟前</td><td>1,180</td><td><span class="tag tag-ok">正常</span></td><td><button class="btn btn-ghost btn-sm">编辑</button> <button class="btn btn-ghost btn-sm">测试</button> <button class="btn btn-ghost btn-sm">日志</button></td></tr>
+                <tr><td style="font-weight:600;">界面新闻APP</td><td>APP推送</td><td>竞品推送新闻、标题、时间</td><td>实时</td><td>8分钟前</td><td>892</td><td><span class="tag tag-ok">正常</span></td><td><button class="btn btn-ghost btn-sm">编辑</button> <button class="btn btn-ghost btn-sm">测试</button> <button class="btn btn-ghost btn-sm">日志</button></td></tr>
+                <tr><td style="font-weight:600;">南方都市报APP</td><td>APP推送</td><td>竞品推送新闻、标题、时间</td><td>实时</td><td>12分钟前</td><td>756</td><td><span class="tag tag-ok">正常</span></td><td><button class="btn btn-ghost btn-sm">编辑</button> <button class="btn btn-ghost btn-sm">测试</button> <button class="btn btn-ghost btn-sm">日志</button></td></tr>
+                <tr><td style="font-weight:600;">新京报APP</td><td>APP推送</td><td>竞品推送新闻、标题、时间</td><td>实时</td><td>15分钟前</td><td>684</td><td><span class="tag tag-ok">正常</span></td><td><button class="btn btn-ghost btn-sm">编辑</button> <button class="btn btn-ghost btn-sm">测试</button> <button class="btn btn-ghost btn-sm">日志</button></td></tr>
+                <tr><td style="font-weight:600;">观察者网APP</td><td>APP推送</td><td>竞品推送新闻、标题、时间</td><td>实时</td><td>10分钟前</td><td>523</td><td><span class="tag tag-ok">正常</span></td><td><button class="btn btn-ghost btn-sm">编辑</button> <button class="btn btn-ghost btn-sm">测试</button> <button class="btn btn-ghost btn-sm">日志</button></td></tr>
+                <tr><td style="font-weight:600;">微信公众号</td><td>API接口</td><td>公众号文章、阅读量、点赞</td><td>30分钟</td><td>28分钟前</td><td>1,420</td><td><span class="tag tag-ok">正常</span></td><td><button class="btn btn-ghost btn-sm">编辑</button> <button class="btn btn-ghost btn-sm">测试</button> <button class="btn btn-ghost btn-sm">日志</button></td></tr>
+                <tr style="background:#fffbeb;"><td style="font-weight:600;">抖音热搜</td><td>热搜榜单</td><td>热搜视频话题、播放量</td><td>10分钟</td><td>45分钟前</td><td style="color:var(--accent4);font-weight:600;">0</td><td><span class="tag tag-pending">⚠ 异常</span></td><td><button class="btn btn-ghost btn-sm">编辑</button> <button class="btn btn-ghost btn-sm">测试</button> <button class="btn btn-ghost btn-sm">日志</button></td></tr>
+                <tr style="background:#fef2f2;"><td style="font-weight:600;">今日头条</td><td>网站采集</td><td>热点新闻标题、评论数</td><td>10分钟</td><td>2小时前</td><td style="color:var(--accent3);font-weight:600;">0</td><td><span class="tag tag-warn">❌ 故障</span></td><td><button class="btn btn-ghost btn-sm">编辑</button> <button class="btn btn-ghost btn-sm">测试</button> <button class="btn btn-ghost btn-sm">日志</button></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <h4 style="font-size:15px;font-weight:600;margin-bottom:14px;">数据质量概览</h4>
+        <div class="kpi-row cols-4">
+          <div class="kpi-card"><div class="kpi-label">今日清洗</div><div class="kpi-value" style="font-size:22px;">1,247<span style="font-size:12px;color:var(--text-3);font-weight:400;"> 条</span></div></div>
+          <div class="kpi-card"><div class="kpi-label">去重处理</div><div class="kpi-value" style="font-size:22px;">382<span style="font-size:12px;color:var(--text-3);font-weight:400;"> 条</span></div></div>
+          <div class="kpi-card"><div class="kpi-label">异常检测</div><div class="kpi-value" style="font-size:22px;color:var(--accent4);">23<span style="font-size:12px;color:var(--text-3);font-weight:400;"> 条</span></div></div>
+          <div class="kpi-card"><div class="kpi-label">数据完整率</div><div class="kpi-value" style="font-size:22px;color:var(--accent5);">98.7%</div></div>
+        </div>
+        <div class="panel">
+          <div class="panel-header"><h3>近期异常事件</h3></div>
+          <div class="panel-body">
+            <ul class="alert-list">
+              <li class="alert-item"><span class="alert-dot red"></span><div><div>今日头条采集超时，已重试3次，建议检查目标网站</div><div class="alert-time">2 小时前</div></div></li>
+              <li class="alert-item"><span class="alert-dot amber"></span><div><div>抖音热搜接口返回空数据，已标记异常</div><div class="alert-time">45 分钟前</div></div></li>
+              <li class="alert-item"><span class="alert-dot amber"></span><div><div>澎湃新闻APP推送数据字段缺失：分类标签</div><div class="alert-time">1 小时前</div></div></li>
+              <li class="alert-item"><span class="alert-dot blue"></span><div><div>微博热搜数据重复：同一话题出现2条不同排名记录</div><div class="alert-time">3 小时前</div></div></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Page 9: 告警中心 -->
+      <div class="page" id="page-alerts">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+          <div>
+            <h3 style="font-size:16px;">告警中心</h3>
+            <p style="font-size:13px;color:var(--text-3);margin-top:4px;">线索更新提醒、竞品预警、系统通知</p>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-ghost btn-sm" onclick="showToast('已全部标记为已读')">✓ 全部已读</button>
+            <button class="btn btn-primary btn-sm" onclick="openAlertSettingsModal()">⚙ 告警设置</button>
+          </div>
+        </div>
+        <div class="tabs" id="alertTabs">
+          <div class="tab active" data-atab="all">全部告警</div>
+          <div class="tab" data-atab="critical">严重 <span style="background:var(--accent3);color:#fff;font-size:10px;padding:1px 6px;border-radius:8px;margin-left:4px;">3</span></div>
+          <div class="tab" data-atab="warning">预警 <span style="background:var(--accent4);color:#fff;font-size:10px;padding:1px 6px;border-radius:8px;margin-left:4px;">4</span></div>
+          <div class="tab" data-atab="notice">通知</div>
+          <div class="tab" data-atab="resolved">已处理</div>
+        </div>
+        <div class="panel">
+          <div class="panel-body" style="padding:0;">
+            <ul class="alert-list" style="padding:16px 20px;">
+              <li class="alert-item" style="padding:14px 0;">
+                <span class="alert-dot red"></span>
+                <div style="flex:1;">
+                  <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                    <div style="font-weight:600;color:var(--text-1);">「低空经济试点」话题登上微博热搜第5位，热度持续攀升</div>
+                    <span class="tag tag-warn" style="margin-left:8px;flex-shrink:0;">严重</span>
+                  </div>
+                  <div style="font-size:12px;color:var(--text-3);margin-top:4px;">热度 856 万，较 1 小时前上涨 42%，建议立即安排跟进报道</div>
+                  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
+                    <div class="alert-time">3 分钟前 · 热搜追踪</div>
+                    <div style="display:flex;gap:6px;">
+                      <button class="btn btn-primary btn-sm" onclick="showToast('已处理');this.closest('.alert-item').style.opacity='0.5'">处理</button>
+                      <button class="btn btn-ghost btn-sm" onclick="showToast('已忽略')">忽略</button>
+                    </div>
+                  </div>
+                </div>
+              </li>
+              <li class="alert-item" style="padding:14px 0;">
+                <span class="alert-dot red"></span>
+                <div style="flex:1;">
+                  <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                    <div style="font-weight:600;color:var(--text-1);">澎湃新闻发布成渝经济圈深度报道，传播量激增</div>
+                    <span class="tag tag-warn" style="margin-left:8px;flex-shrink:0;">严重</span>
+                  </div>
+                  <div style="font-size:12px;color:var(--text-3);margin-top:4px;">传播量 23.4 万，超过竞品预警阈值，需关注报道角度与差异化</div>
+                  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
+                    <div class="alert-time">12 分钟前 · 竞品监控</div>
+                    <div style="display:flex;gap:6px;">
+                      <button class="btn btn-primary btn-sm" onclick="showToast('已处理');this.closest('.alert-item').style.opacity='0.5'">处理</button>
+                      <button class="btn btn-ghost btn-sm" onclick="showToast('已忽略')">忽略</button>
+                    </div>
+                  </div>
+                </div>
+              </li>
+              <li class="alert-item" style="padding:14px 0;">
+                <span class="alert-dot red"></span>
+                <div style="flex:1;">
+                  <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                    <div style="font-weight:600;color:var(--text-1);">三星堆6号坑首日发掘启动，全网关注度爆发</div>
+                    <span class="tag tag-warn" style="margin-left:8px;flex-shrink:0;">严重</span>
+                  </div>
+                  <div style="font-size:12px;color:var(--text-3);margin-top:4px;">微博热搜第2位，全网阅读量超5亿，央视开启直播</div>
+                  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
+                    <div class="alert-time">30 分钟前 · 热搜追踪</div>
+                    <div style="display:flex;gap:6px;">
+                      <button class="btn btn-primary btn-sm" onclick="showToast('已处理');this.closest('.alert-item').style.opacity='0.5'">处理</button>
+                      <button class="btn btn-ghost btn-sm" onclick="showToast('已忽略')">忽略</button>
+                    </div>
+                  </div>
+                </div>
+              </li>
+              <li class="alert-item" style="padding:14px 0;">
+                <span class="alert-dot amber"></span>
+                <div style="flex:1;">
+                  <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                    <div style="font-weight:600;color:var(--text-1);">抖音平台出现新能源汽车行业负面话题，热度上升中</div>
+                    <span class="tag tag-pending" style="margin-left:8px;flex-shrink:0;">预警</span>
+                  </div>
+                  <div style="font-size:12px;color:var(--text-3);margin-top:4px;">涉及多家车企质量投诉，当前热度中等，有上升趋势</div>
+                  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
+                    <div class="alert-time">28 分钟前 · 线索总览</div>
+                    <div style="display:flex;gap:6px;">
+                      <button class="btn btn-primary btn-sm" onclick="showToast('已处理');this.closest('.alert-item').style.opacity='0.5'">处理</button>
+                      <button class="btn btn-ghost btn-sm" onclick="showToast('已忽略')">忽略</button>
+                    </div>
+                  </div>
+                </div>
+              </li>
+              <li class="alert-item" style="padding:14px 0;">
+                <span class="alert-dot amber"></span>
+                <div style="flex:1;">
+                  <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                    <div style="font-weight:600;color:var(--text-1);">今日头条数据源采集超时，已重试3次</div>
+                    <span class="tag tag-pending" style="margin-left:8px;flex-shrink:0;">预警</span>
+                  </div>
+                  <div style="font-size:12px;color:var(--text-3);margin-top:4px;">建议检查目标网站接口状态，当前已自动切换备用采集方案</div>
+                  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
+                    <div class="alert-time">2 小时前 · 数据源管理</div>
+                    <div style="display:flex;gap:6px;">
+                      <button class="btn btn-primary btn-sm" onclick="showToast('已处理');this.closest('.alert-item').style.opacity='0.5'">处理</button>
+                      <button class="btn btn-ghost btn-sm" onclick="showToast('已忽略')">忽略</button>
+                    </div>
+                  </div>
+                </div>
+              </li>
+              <li class="alert-item" style="padding:14px 0;">
+                <span class="alert-dot amber"></span>
+                <div style="flex:1;">
+                  <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                    <div style="font-weight:600;color:var(--text-1);">百度指数"数字人民币"搜索量异常波动，较昨日增长320%</div>
+                    <span class="tag tag-pending" style="margin-left:8px;flex-shrink:0;">预警</span>
+                  </div>
+                  <div style="font-size:12px;color:var(--text-3);margin-top:4px;">搜索指数从1,200飙升至5,040，与成都数字人民币推广相关</div>
+                  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
+                    <div class="alert-time">1 小时前 · 热搜追踪</div>
+                    <div style="display:flex;gap:6px;">
+                      <button class="btn btn-primary btn-sm" onclick="showToast('已处理');this.closest('.alert-item').style.opacity='0.5'">处理</button>
+                      <button class="btn btn-ghost btn-sm" onclick="showToast('已忽略')">忽略</button>
+                    </div>
+                  </div>
+                </div>
+              </li>
+              <li class="alert-item" style="padding:14px 0;">
+                <span class="alert-dot amber"></span>
+                <div style="flex:1;">
+                  <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                    <div style="font-weight:600;color:var(--text-1);">红星新闻今日发稿52篇，超过我方15%</div>
+                    <span class="tag tag-pending" style="margin-left:8px;flex-shrink:0;">预警</span>
+                  </div>
+                  <div style="font-size:12px;color:var(--text-3);margin-top:4px;">竞品发稿量预警阈值已触发，建议关注三星堆和低空经济报道</div>
+                  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
+                    <div class="alert-time">45 分钟前 · 竞品监控</div>
+                    <div style="display:flex;gap:6px;">
+                      <button class="btn btn-primary btn-sm" onclick="showToast('已处理');this.closest('.alert-item').style.opacity='0.5'">处理</button>
+                      <button class="btn btn-ghost btn-sm" onclick="showToast('已忽略')">忽略</button>
+                    </div>
+                  </div>
+                </div>
+              </li>
+              <li class="alert-item" style="padding:14px 0;">
+                <span class="alert-dot blue"></span>
+                <div style="flex:1;">
+                  <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                    <div style="font-weight:600;color:var(--text-1);">知乎热榜「AI大模型应用落地」话题与我方重点报道方向相关</div>
+                    <span class="tag tag-info" style="margin-left:8px;flex-shrink:0;">通知</span>
+                  </div>
+                  <div style="font-size:12px;color:var(--text-3);margin-top:4px;">知乎热榜第3位，热度 651万，建议关注并策划相关报道</div>
+                  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
+                    <div class="alert-time">45 分钟前 · 热搜追踪</div>
+                    <div style="display:flex;gap:6px;">
+                      <button class="btn btn-primary btn-sm" onclick="showToast('已处理');this.closest('.alert-item').style.opacity='0.5'">处理</button>
+                      <button class="btn btn-ghost btn-sm" onclick="showToast('已忽略')">忽略</button>
+                    </div>
+                  </div>
+                </div>
+              </li>
+              <li class="alert-item" style="padding:14px 0;">
+                <span class="alert-dot blue"></span>
+                <div style="flex:1;">
+                  <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                    <div style="font-weight:600;color:var(--text-1);">抖音热搜数据接口返回空数据，已标记异常</div>
+                    <span class="tag tag-info" style="margin-left:8px;flex-shrink:0;">通知</span>
+                  </div>
+                  <div style="font-size:12px;color:var(--text-3);margin-top:4px;">已自动切换备用数据源，预计30分钟内恢复</div>
+                  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
+                    <div class="alert-time">1 小时前 · 数据源管理</div>
+                    <div style="display:flex;gap:6px;">
+                      <button class="btn btn-primary btn-sm" onclick="showToast('已处理');this.closest('.alert-item').style.opacity='0.5'">处理</button>
+                      <button class="btn btn-ghost btn-sm" onclick="showToast('已忽略')">忽略</button>
+                    </div>
+                  </div>
+                </div>
+              </li>
+              <li class="alert-item" style="padding:14px 0;">
+                <span class="alert-dot blue"></span>
+                <div style="flex:1;">
+                  <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                    <div style="font-weight:600;color:var(--text-1);">每日线索日报已自动生成，待查阅</div>
+                    <span class="tag tag-info" style="margin-left:8px;flex-shrink:0;">通知</span>
+                  </div>
+                  <div style="font-size:12px;color:var(--text-3);margin-top:4px;">2026年11月9日线索日报已于08:00自动生成</div>
+                  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
+                    <div class="alert-time">8 小时前 · 报告中心</div>
+                    <div style="display:flex;gap:6px;">
+                      <button class="btn btn-primary btn-sm" onclick="showToast('已处理');this.closest('.alert-item').style.opacity='0.5'">查看</button>
+                      <button class="btn btn-ghost btn-sm" onclick="showToast('已忽略')">忽略</button>
+                    </div>
+                  </div>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Page 10: KPI 监控 -->
+      <div class="page" id="page-kpi">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+          <div>
+            <h3 style="font-size:16px;">KPI 监控</h3>
+            <p style="font-size:13px;color:var(--text-3);margin-top:4px;">核心业务指标实时监控与目标达成追踪</p>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="showToast('添加指标功能开发中')">+ 添加指标</button>
+        </div>
+        <div class="kpi-row cols-5">
+          <div class="kpi-card" style="border-left:3px solid var(--accent5);">
+            <div class="kpi-label">📋 日均线索处理量</div>
+            <div class="kpi-value" style="font-size:24px;">247<span style="font-size:13px;color:var(--text-3);font-weight:400;">/300</span></div>
+            <div style="margin-top:6px;"><div class="progress-bar" style="height:10px;"><div class="progress-fill" style="width:82.3%;background:var(--accent5);"></div></div></div>
+            <div class="kpi-change up" style="margin-top:4px;">82.3% 达成率</div>
+          </div>
+          <div class="kpi-card" style="border-left:3px solid var(--accent5);">
+            <div class="kpi-label">🔥 热搜响应率</div>
+            <div class="kpi-value" style="font-size:24px;">94.2%</div>
+            <div style="margin-top:6px;"><div class="progress-bar" style="height:10px;"><div class="progress-fill" style="width:94.2%;background:var(--accent5);"></div></div></div>
+            <div class="kpi-change up" style="margin-top:4px;">目标 ≥90%</div>
+          </div>
+          <div class="kpi-card" style="border-left:3px solid var(--accent4);">
+            <div class="kpi-label">⏱ 预警响应时间</div>
+            <div class="kpi-value" style="font-size:24px;">12<span style="font-size:13px;color:var(--text-3);font-weight:400;">分钟</span></div>
+            <div style="margin-top:6px;"><div class="progress-bar" style="height:10px;"><div class="progress-fill" style="width:60%;background:var(--accent4);"></div></div></div>
+            <div class="kpi-change down" style="margin-top:4px;">目标 ≤10分钟</div>
+          </div>
+          <div class="kpi-card" style="border-left:3px solid var(--accent5);">
+            <div class="kpi-label">📝 报告及时率</div>
+            <div class="kpi-value" style="font-size:24px;">100%</div>
+            <div style="margin-top:6px;"><div class="progress-bar" style="height:10px;"><div class="progress-fill" style="width:100%;background:var(--accent5);"></div></div></div>
+            <div class="kpi-change up" style="margin-top:4px;">目标 100%</div>
+          </div>
+          <div class="kpi-card" style="border-left:3px solid var(--accent3);">
+            <div class="kpi-label">⚠ 负面处理率</div>
+            <div class="kpi-value" style="font-size:24px;">78.3%</div>
+            <div style="margin-top:6px;"><div class="progress-bar" style="height:10px;"><div class="progress-fill" style="width:78.3%;background:var(--accent3);"></div></div></div>
+            <div class="kpi-change down" style="margin-top:4px;">目标 ≥90%</div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-header"><h3>KPI 详情</h3></div>
+          <div class="panel-body">
+            <table class="data-table">
+              <thead><tr><th>指标名称</th><th>当前值</th><th>目标值</th><th>达成率</th><th>7日趋势</th><th>最近5次读数</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td style="font-weight:600;">日均线索处理量</td>
+                  <td><strong>247</strong> 条/日</td>
+                  <td>300 条/日</td>
+                  <td><span class="tag tag-ok">82.3%</span></td>
+                  <td><div style="display:flex;gap:2px;align-items:flex-end;height:24px;"><div style="width:8px;background:var(--accent5);border-radius:2px;height:60%;"></div><div style="width:8px;background:var(--accent5);border-radius:2px;height:70%;"></div><div style="width:8px;background:var(--accent5);border-radius:2px;height:65%;"></div><div style="width:8px;background:var(--accent5);border-radius:2px;height:80%;"></div><div style="width:8px;background:var(--accent5);border-radius:2px;height:75%;"></div><div style="width:8px;background:var(--accent5);border-radius:2px;height:85%;"></div><div style="width:8px;background:var(--accent5);border-radius:2px;height:82%;"></div></div></td>
+                  <td style="font-size:12px;color:var(--text-3);">231, 238, 242, 251, 247</td>
+                </tr>
+                <tr>
+                  <td style="font-weight:600;">热搜响应率</td>
+                  <td><strong>94.2%</strong></td>
+                  <td>≥90%</td>
+                  <td><span class="tag tag-ok">104.7%</span></td>
+                  <td><div style="display:flex;gap:2px;align-items:flex-end;height:24px;"><div style="width:8px;background:var(--accent5);border-radius:2px;height:85%;"></div><div style="width:8px;background:var(--accent5);border-radius:2px;height:90%;"></div><div style="width:8px;background:var(--accent5);border-radius:2px;height:88%;"></div><div style="width:8px;background:var(--accent5);border-radius:2px;height:92%;"></div><div style="width:8px;background:var(--accent5);border-radius:2px;height:95%;"></div><div style="width:8px;background:var(--accent5);border-radius:2px;height:93%;"></div><div style="width:8px;background:var(--accent5);border-radius:2px;height:94%;"></div></div></td>
+                  <td style="font-size:12px;color:var(--text-3);">91.5%, 92.8%, 93.1%, 94.0%, 94.2%</td>
+                </tr>
+                <tr>
+                  <td style="font-weight:600;">预警响应时间</td>
+                  <td><strong>12</strong> 分钟</td>
+                  <td>≤10 分钟</td>
+                  <td><span class="tag tag-pending">83.3%</span></td>
+                  <td><div style="display:flex;gap:2px;align-items:flex-end;height:24px;"><div style="width:8px;background:var(--accent4);border-radius:2px;height:50%;"></div><div style="width:8px;background:var(--accent4);border-radius:2px;height:55%;"></div><div style="width:8px;background:var(--accent4);border-radius:2px;height:60%;"></div><div style="width:8px;background:var(--accent4);border-radius:2px;height:58%;"></div><div style="width:8px;background:var(--accent4);border-radius:2px;height:55%;"></div><div style="width:8px;background:var(--accent4);border-radius:2px;height:62%;"></div><div style="width:8px;background:var(--accent4);border-radius:2px;height:60%;"></div></div></td>
+                  <td style="font-size:12px;color:var(--text-3);">15, 14, 13, 11, 12</td>
+                </tr>
+                <tr>
+                  <td style="font-weight:600;">报告及时率</td>
+                  <td><strong>100%</strong></td>
+                  <td>100%</td>
+                  <td><span class="tag tag-ok">100%</span></td>
+                  <td><div style="display:flex;gap:2px;align-items:flex-end;height:24px;"><div style="width:8px;background:var(--accent5);border-radius:2px;height:100%;"></div><div style="width:8px;background:var(--accent5);border-radius:2px;height:100%;"></div><div style="width:8px;background:var(--accent5);border-radius:2px;height:100%;"></div><div style="width:8px;background:var(--accent5);border-radius:2px;height:100%;"></div><div style="width:8px;background:var(--accent5);border-radius:2px;height:100%;"></div><div style="width:8px;background:var(--accent5);border-radius:2px;height:100%;"></div><div style="width:8px;background:var(--accent5);border-radius:2px;height:100%;"></div></div></td>
+                  <td style="font-size:12px;color:var(--text-3);">100%, 100%, 100%, 100%, 100%</td>
+                </tr>
+                <tr>
+                  <td style="font-weight:600;">负面处理率</td>
+                  <td><strong>78.3%</strong></td>
+                  <td>≥90%</td>
+                  <td><span class="tag tag-warn">87.0%</span></td>
+                  <td><div style="display:flex;gap:2px;align-items:flex-end;height:24px;"><div style="width:8px;background:var(--accent3);border-radius:2px;height:70%;"></div><div style="width:8px;background:var(--accent3);border-radius:2px;height:65%;"></div><div style="width:8px;background:var(--accent3);border-radius:2px;height:72%;"></div><div style="width:8px;background:var(--accent3);border-radius:2px;height:68%;"></div><div style="width:8px;background:var(--accent3);border-radius:2px;height:75%;"></div><div style="width:8px;background:var(--accent3);border-radius:2px;height:78%;"></div><div style="width:8px;background:var(--accent3);border-radius:2px;height:78%;"></div></div></td>
+                  <td style="font-size:12px;color:var(--text-3);">72.1%, 74.5%, 75.8%, 77.0%, 78.3%</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-header"><h3>KPI 设置</h3></div>
+          <div class="panel-body">
+            <table class="data-table">
+              <thead><tr><th>指标名称</th><th>当前目标</th><th>监控频率</th><th>通知方式</th><th>状态</th><th>操作</th></tr></thead>
+              <tbody>
+                <tr><td style="font-weight:600;">日均线索处理量</td><td>300 条/日</td><td>每日</td><td>站内通知 + 邮件</td><td><span class="tag tag-ok">达标</span></td><td><button class="btn btn-ghost btn-sm" onclick="showToast('编辑目标功能')">编辑目标</button></td></tr>
+                <tr><td style="font-weight:600;">热搜响应率</td><td>≥90%</td><td>每小时</td><td>站内通知</td><td><span class="tag tag-ok">达标</span></td><td><button class="btn btn-ghost btn-sm" onclick="showToast('编辑目标功能')">编辑目标</button></td></tr>
+                <tr><td style="font-weight:600;">预警响应时间</td><td>≤10 分钟</td><td>实时</td><td>站内通知 + 短信</td><td><span class="tag tag-pending">未达标</span></td><td><button class="btn btn-ghost btn-sm" onclick="showToast('编辑目标功能')">编辑目标</button></td></tr>
+                <tr><td style="font-weight:600;">报告及时率</td><td>100%</td><td>每日</td><td>站内通知</td><td><span class="tag tag-ok">达标</span></td><td><button class="btn btn-ghost btn-sm" onclick="showToast('编辑目标功能')">编辑目标</button></td></tr>
+                <tr><td style="font-weight:600;">负面处理率</td><td>≥90%</td><td>每小时</td><td>站内通知 + 邮件 + 短信</td><td><span class="tag tag-warn">未达标</span></td><td><button class="btn btn-ghost btn-sm" onclick="showToast('编辑目标功能')">编辑目标</button></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Page 11: 系统管理 -->
+      <div class="page" id="page-settings">
+        <div class="tabs" id="settingsTabs">
+          <div class="tab active" data-tab="users">用户权限</div>
+          <div class="tab" data-tab="backup">数据备份</div>
+          <div class="tab" data-tab="audit">审计日志</div>
+          <div class="tab" data-tab="perf">系统性能</div>
+        </div>
+        <div id="settingsContent">
+          <div class="settings-tab active" data-tab="users">
+            <div class="panel">
+              <div class="panel-header"><h3>用户管理</h3><button class="btn btn-primary btn-sm">+ 添加用户</button></div>
+              <div class="panel-body">
+                <table class="data-table">
+                  <thead><tr><th>用户</th><th>角色</th><th>部门</th><th>在线状态</th><th>最后登录</th><th>操作</th></tr></thead>
+                  <tbody>
+                    <tr><td><div style="display:flex;align-items:center;gap:8px;"><div style="width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;">张</div>张编辑</div></td><td><span class="tag tag-info">管理员</span></td><td>新闻中心</td><td><span class="status-dot green"></span>在线</td><td>当前</td><td><button class="btn btn-ghost btn-sm">编辑</button></td></tr>
+                    <tr><td><div style="display:flex;align-items:center;gap:8px;"><div style="width:28px;height:28px;border-radius:50%;background:var(--accent2);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;">王</div>王记者</div></td><td><span class="tag tag-active">记者</span></td><td>深度报道部</td><td><span class="status-dot green"></span>在线</td><td>5 分钟前</td><td><button class="btn btn-ghost btn-sm">编辑</button></td></tr>
+                    <tr><td><div style="display:flex;align-items:center;gap:8px;"><div style="width:28px;height:28px;border-radius:50%;background:var(--accent5);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;">李</div>李编辑</div></td><td><span class="tag tag-active">编辑</span></td><td>财经频道</td><td><span class="status-dot amber"></span>离开</td><td>30 分钟前</td><td><button class="btn btn-ghost btn-sm">编辑</button></td></tr>
+                    <tr><td><div style="display:flex;align-items:center;gap:8px;"><div style="width:28px;height:28px;border-radius:50%;background:var(--accent4);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;">赵</div>赵主任</div></td><td><span class="tag tag-info">管理员</span></td><td>编委会</td><td><span class="status-dot red"></span>离线</td><td>2 小时前</td><td><button class="btn btn-ghost btn-sm">编辑</button></td></tr>
+                    <tr><td><div style="display:flex;align-items:center;gap:8px;"><div style="width:28px;height:28px;border-radius:50%;background:#ec4899;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;">刘</div>刘运营</div></td><td><span class="tag tag-active">运营</span></td><td>新媒体运营</td><td><span class="status-dot green"></span>在线</td><td>10 分钟前</td><td><button class="btn btn-ghost btn-sm">编辑</button></td></tr>
+                    <tr><td><div style="display:flex;align-items:center;gap:8px;"><div style="width:28px;height:28px;border-radius:50%;background:var(--text-3);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;">陈</div>陈实习生</div></td><td><span class="tag tag-archive">访客</span></td><td>新闻中心</td><td><span class="status-dot green"></span>在线</td><td>1 分钟前</td><td><button class="btn btn-ghost btn-sm">编辑</button></td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <div class="settings-tab" data-tab="backup" style="display:none;">
+            <div style="display:flex;gap:12px;margin-bottom:20px;">
+              <button class="btn btn-primary" onclick="showToast('正在执行备份...')">🔄 立即备份</button>
+              <button class="btn btn-ghost" onclick="showToast('请选择恢复点')">📦 数据恢复</button>
+            </div>
+            <div class="panel">
+              <div class="panel-header"><h3>备份设置</h3></div>
+              <div class="panel-body">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                  <span style="font-size:13px;color:var(--text-2);">自动备份</span>
+                  <span class="tag tag-ok">已启用 · 每日 02:00</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                  <span style="font-size:13px;color:var(--text-2);">备份保留天数</span>
+                  <span style="font-size:13px;font-weight:500;">30 天</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                  <span style="font-size:13px;color:var(--text-2);">备份存储位置</span>
+                  <span style="font-size:13px;font-weight:500;">阿里云 OSS (杭州)</span>
+                </div>
+              </div>
+            </div>
+            <div class="panel">
+              <div class="panel-header"><h3>近期备份</h3></div>
+              <div class="panel-body">
+                <table class="data-table">
+                  <thead><tr><th>时间</th><th>类型</th><th>大小</th><th>状态</th><th>操作</th></tr></thead>
+                  <tbody>
+                    <tr><td>11-10 02:00</td><td>自动全量</td><td>2.8 GB</td><td><span class="tag tag-ok">成功</span></td><td><button class="btn btn-ghost btn-sm">恢复</button> <button class="btn btn-ghost btn-sm">下载</button></td></tr>
+                    <tr><td>11-09 02:00</td><td>自动全量</td><td>2.7 GB</td><td><span class="tag tag-ok">成功</span></td><td><button class="btn btn-ghost btn-sm">恢复</button> <button class="btn btn-ghost btn-sm">下载</button></td></tr>
+                    <tr><td>11-08 14:30</td><td>手动增量</td><td>320 MB</td><td><span class="tag tag-ok">成功</span></td><td><button class="btn btn-ghost btn-sm">恢复</button> <button class="btn btn-ghost btn-sm">下载</button></td></tr>
+                    <tr><td>11-08 02:00</td><td>自动全量</td><td>2.7 GB</td><td><span class="tag tag-ok">成功</span></td><td><button class="btn btn-ghost btn-sm">恢复</button> <button class="btn btn-ghost btn-sm">下载</button></td></tr>
+                    <tr><td>11-07 02:00</td><td>自动全量</td><td>2.6 GB</td><td><span class="tag tag-ok">成功</span></td><td><button class="btn btn-ghost btn-sm">恢复</button> <button class="btn btn-ghost btn-sm">下载</button></td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <div class="settings-tab" data-tab="audit" style="display:none;">
+            <div class="panel">
+              <div class="panel-header"><h3>审计日志</h3><div style="display:flex;gap:8px;"><input type="date" value="2026-11-10" style="padding:4px 8px;border:1px solid var(--border);border-radius:var(--radius);font-size:12px;"><button class="btn btn-ghost btn-sm">查询</button></div></div>
+              <div class="panel-body">
+                <table class="data-table">
+                  <thead><tr><th>时间</th><th>用户</th><th>操作</th><th>目标</th><th>IP 地址</th></tr></thead>
+                  <tbody>
+                    <tr><td>16:42:18</td><td>张编辑</td><td>导出报告</td><td>11月9日日报</td><td>192.168.1.105</td></tr>
+                    <tr><td>16:30:05</td><td>王记者</td><td>查看线索</td><td>低空经济试点方案获批</td><td>192.168.1.112</td></tr>
+                    <tr><td>15:55:33</td><td>李编辑</td><td>分享报告</td><td>第44周周报 → 赵主任</td><td>192.168.1.108</td></tr>
+                    <tr><td>15:20:11</td><td>张编辑</td><td>修改数据源</td><td>今日头条 - 调整采集频率</td><td>192.168.1.105</td></tr>
+                    <tr><td>14:45:02</td><td>刘运营</td><td>分配线索</td><td>新能源汽车出海 → 王记者</td><td>192.168.1.115</td></tr>
+                    <tr><td>14:30:18</td><td>王记者</td><td>标记跟进</td><td>成渝AI芯片产业链调研</td><td>192.168.1.112</td></tr>
+                    <tr><td>13:45:02</td><td>陈实习生</td><td>登录系统</td><td>—</td><td>192.168.1.120</td></tr>
+                    <tr><td>12:15:33</td><td>赵主任</td><td>登录系统</td><td>—</td><td>192.168.1.100</td></tr>
+                    <tr><td>11:30:22</td><td>张编辑</td><td>新建报告</td><td>AI大模型应用落地专题</td><td>192.168.1.105</td></tr>
+                    <tr><td>10:05:11</td><td>李编辑</td><td>导出数据</td><td>竞品声量对比数据</td><td>192.168.1.108</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <div class="settings-tab" data-tab="perf" style="display:none;">
+            <div class="kpi-row cols-4">
+              <div class="kpi-card"><div class="kpi-label">系统运行时间</div><div class="kpi-value" style="font-size:22px;">142 天</div><div class="kpi-change up">稳定运行中</div></div>
+              <div class="kpi-card"><div class="kpi-label">API 平均响应</div><div class="kpi-value" style="font-size:22px;">42ms</div><div class="kpi-change up">↓ 3ms</div></div>
+              <div class="kpi-card"><div class="kpi-label">数据库大小</div><div class="kpi-value" style="font-size:22px;">28.7 GB</div><div class="kpi-change" style="color:var(--text-3)">+1.2 GB/周</div></div>
+              <div class="kpi-card"><div class="kpi-label">内存使用率</div><div class="kpi-value" style="font-size:22px;">67%</div><div class="kpi-change" style="color:var(--text-3)">正常范围</div></div>
+            </div>
+            <div class="panel">
+              <div class="panel-header"><h3>系统指标</h3></div>
+              <div class="panel-body">
+                <div style="margin-bottom:16px;"><div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:13px;"><span>CPU 使用率</span><span><strong>34%</strong></span></div><div class="progress-bar" style="height:12px;"><div class="progress-fill" style="width:34%;background:var(--accent5);"></div></div></div>
+                <div style="margin-bottom:16px;"><div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:13px;"><span>内存使用率</span><span><strong>67%</strong> (5.4 / 8 GB)</span></div><div class="progress-bar" style="height:12px;"><div class="progress-fill" style="width:67%;background:var(--accent);"></div></div></div>
+                <div style="margin-bottom:16px;"><div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:13px;"><span>磁盘使用率</span><span><strong>52%</strong> (104 / 200 GB)</span></div><div class="progress-bar" style="height:12px;"><div class="progress-fill" style="width:52%;background:var(--accent);"></div></div></div>
+                <div><div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:13px;"><span>数据库连接池</span><span><strong>18 / 50</strong></span></div><div class="progress-bar" style="height:12px;"><div class="progress-fill" style="width:36%;background:var(--accent5);"></div></div></div>
+              </div>
+            </div>
+            <div class="panel">
+              <div class="panel-header"><h3>近期运维操作</h3></div>
+              <div class="panel-body">
+                <table class="data-table">
+                  <thead><tr><th>时间</th><th>操作</th><th>执行人</th><th>状态</th></tr></thead>
+                  <tbody>
+                    <tr><td>11-10 02:00</td><td>自动全量备份</td><td>系统</td><td><span class="tag tag-ok">成功</span></td></tr>
+                    <tr><td>11-09 18:30</td><td>数据库索引优化</td><td>张编辑</td><td><span class="tag tag-ok">成功</span></td></tr>
+                    <tr><td>11-09 14:20</td><td>今日头条数据源重连</td><td>张编辑</td><td><span class="tag tag-pending">部分成功</span></td></tr>
+                    <tr><td>11-09 02:00</td><td>自动全量备份</td><td>系统</td><td><span class="tag tag-ok">成功</span></td></tr>
+                    <tr><td>11-08 09:15</td><td>系统升级至 v3.0.0</td><td>张编辑</td><td><span class="tag tag-ok">成功</span></td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Big Screen now opens in new tab via window.open() -->
+
+<script>
+
+// ========== Navigation ==========
+const pageTitles = {dashboard:'线索总览',competitor:'竞品监控',hottopic:'热搜追踪',leads:'线索管理',bigscreen:'可视化大屏',reports:'报告中心',datasource:'数据源管理',alerts:'告警中心',kpi:'KPI 监控',settings:'系统管理'};
+let currentPage = 'dashboard';
+
+document.querySelectorAll('.nav-item').forEach(item => {
+  item.addEventListener('click', () => navigateTo(item.dataset.page));
+});
+
+function navigateTo(page) {
+  currentPage = page;
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelector(`.nav-item[data-page="${page}"]`).classList.add('active');
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  document.getElementById('pageTitle').textContent = pageTitles[page] || '';
+}
+
+// ========== Clock ==========
+function updateClock() {
+  const now = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  const str = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+  const el = document.getElementById('clock');
+  if (el) el.textContent = str;
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ========== Toast ==========
+function showToast(msg, duration) {
+  const existing = document.querySelectorAll('.toast');
+  existing.forEach(e => e.remove());
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.innerHTML = `<span class="toast-icon">✓</span><span>${msg}</span>`;
+  document.body.appendChild(t);
+  setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateX(20px)'; setTimeout(() => t.remove(), 300); }, duration || 3000);
+}
+
+// ========== Share Menu ==========
+function toggleShareMenu(btn) {
+  const menu = btn.nextElementSibling;
+  document.querySelectorAll('.share-menu.show').forEach(m => { if (m !== menu) m.classList.remove('show'); });
+  menu.classList.toggle('show');
+  menu.querySelectorAll('.share-menu-item').forEach(mi => {
+    mi.onclick = (e) => { e.stopPropagation(); showToast(`已分享至 ${mi.textContent.trim()}`); menu.classList.remove('show'); };
+  });
+}
+document.addEventListener('click', e => { if (!e.target.closest('.share-dropdown')) document.querySelectorAll('.share-menu.show').forEach(m => m.classList.remove('show')); });
+
+// ========== Tabs ==========
+document.querySelectorAll('.tabs').forEach(tabGroup => {
+  tabGroup.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      tabGroup.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      if (tabGroup.id === 'settingsTabs') {
+        document.querySelectorAll('.settings-tab').forEach(st => st.style.display = 'none');
+        const target = document.querySelector(`.settings-tab[data-tab="${tab.dataset.tab}"]`);
+        if (target) { target.style.display = 'block'; }
+      }
+      if (tabGroup.id === 'hotSearchTabs') {
+        document.getElementById('hotSearchTabTable').style.display = tab.dataset.htab === 'table' ? 'block' : 'none';
+        document.getElementById('hotSearchTabFollow').style.display = tab.dataset.htab === 'follow' ? 'block' : 'none';
+      }
+      if (tabGroup.id === 'competitorTabs') {
+        document.getElementById('competitorTabOverview').style.display = tab.dataset.ctab === 'overview' ? 'block' : 'none';
+        document.getElementById('competitorTabAlerts').style.display = tab.dataset.ctab === 'alerts' ? 'block' : 'none';
+      }
+    });
+  });
+});
+
+// ========== Chips ==========
+document.querySelectorAll('.chip-group').forEach(group => {
+  group.querySelectorAll('.chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      group.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+    });
+  });
+});
+
+// ========== Panel Filters ==========
+document.querySelectorAll('.panel-filter').forEach(group => {
+  group.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      group.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      if (group.id === 'sourceFilter') renderSourceChart(btn.dataset.dim);
+    });
+  });
+});
+
+// ========== SVG Chart Helpers ==========
+function svgEl(tag, attrs) {
+  const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  if (attrs) for (const [k,v] of Object.entries(attrs)) el.setAttribute(k, v);
+  return el;
+}
+function makeSVG(w, h) {
+  return svgEl('svg', {viewBox:`0 0 ${w} ${h}`, width:'100%', height:h, preserveAspectRatio:'xMidYMid meet'});
+}
+
+// ========== Mock Data ==========
+const HOT_WORDS = [
+  {text:'成渝双城经济圈',size:28,heat:9500},{text:'AI大模型',size:26,heat:8900},{text:'低空经济',size:24,heat:8200},
+  {text:'新能源汽车出海',size:22,heat:7600},{text:'三星堆考古',size:20,heat:6800},{text:'乡村振兴',size:19,heat:6200},
+  {text:'文旅融合',size:18,heat:5900},{text:'数字人民币',size:17,heat:5400},{text:'芯片自主',size:16,heat:5100},
+  {text:'大熊猫保护',size:15,heat:4800},{text:'智能制造',size:14,heat:4500},{text:'跨境电商',size:13,heat:4200},
+  {text:'碳中和目标',size:12,heat:3900},{text:'5G新应用',size:11,heat:3600},{text:'数据安全',size:11,heat:3400},
+  {text:'直播带货',size:10,heat:3100},{text:'元宇宙落地',size:10,heat:2800},{text:'教育改革',size:9,heat:2500}
+];
+
+const COMPETITORS = [
+  {name:'澎湃新闻',color:'#1e40af',letter:'澎',desc:'上海报业集团，以深度调查报道见长',articles:45,hotHits:5,followers:'3200万'},
+  {name:'界面新闻',color:'#0369a1',letter:'界',desc:'财经商业领域专业媒体平台',articles:38,hotHits:3,followers:'1800万'},
+  {name:'红星新闻',color:'#dc2626',letter:'红',desc:'成都传媒集团，封面新闻本地劲敌',articles:52,hotHits:7,followers:'2600万'},
+  {name:'南方都市报',color:'#16a34a',letter:'南',desc:'广东地区最具影响力都市报',articles:41,hotHits:4,followers:'2900万'},
+  {name:'新京报',color:'#7c3aed',letter:'新',desc:'北京地区高质量新闻媒体',articles:36,hotHits:3,followers:'2100万'},
+  {name:'观察者网',color:'#ea580c',letter:'观',desc:'时政国际类深度报道平台',articles:29,hotHits:2,followers:'4500万'}
+];
+
+const LEADS = [
+  {title:'成都低空经济试点方案获批，首批3条无人机航线将开通',heat:95,sources:['微博','百度','头条'],status:'pending',type:'热点',time:'16:30',content:'成都市低空经济试点方案正式获得民航局批准，首批将开通3条无人机物流航线，覆盖天府新区至双流、龙泉驿至青白江等区域。预计年运输量达50万件，标志着成都成为全国首批低空经济试点城市之一。',platforms:['微博热搜第5位','百度指数上涨320%','抖音相关视频播放量破亿']},
+  {title:'四川新能源车企出口量同比增长180%',heat:88,sources:['头条','百度'],status:'active',type:'趋势',time:'15:15',content:'据四川省商务厅最新数据，2026年前三季度四川新能源汽车出口量达12.8万辆，同比增长180%，出口额突破200亿元。其中，比亚迪成都工厂和沃尔沃成都基地贡献了主要增量。',platforms:['头条推荐位','百度搜索指数TOP10']},
+  {title:'成渝地区AI芯片产业链调研：12家企业获新一轮融资',heat:82,sources:['知乎','百度'],status:'active',type:'行业',time:'14:00',content:'据不完全统计，2026年下半年以来，成渝地区已有12家AI芯片相关企业完成新一轮融资，总融资额超过80亿元。涵盖芯片设计、封装测试、EDA工具等细分领域。',platforms:['知乎热榜','36氪报道']},
+  {title:'数字人民币在成都公共交通场景全面推广',heat:76,sources:['微博','抖音'],status:'pending',type:'热点',time:'13:30',content:'成都地铁、公交系统全面接入数字人民币支付，成为全国首个实现公共交通数字人民币全覆盖的城市。市民可通过数字人民币APP直接扫码乘车。',platforms:['微博话题阅读量2.3亿','抖音相关视频点赞超50万']},
+  {title:'三星堆新一轮考古发掘启动，6号坑出土重大发现',heat:93,sources:['微博','百度','知乎','头条'],status:'active',type:'突发',time:'12:00',content:'三星堆遗址6号祭祀坑考古发掘正式启动，首日即出土一件大型青铜器，初步判断为前所未见的祭祀用具。此次发掘由四川省文物考古研究院主持，预计持续3个月。',platforms:['微博热搜第2位','央视新闻直播','全网阅读量超5亿']},
+  {title:'大熊猫国家公园生态修复项目取得阶段性成果',heat:65,sources:['百度','知乎'],status:'converted',type:'趋势',time:'11:30',content:'大熊猫国家公园四川片区生态修复项目一期工程完成验收，修复面积达12万亩，野生大熊猫活动范围扩大15%，红外相机新记录到23只野生大熊猫个体。',platforms:['新华社报道','百度指数稳定']},
+  {title:'成渝双城经济圈GDP突破8万亿，增速领跑西部',heat:78,sources:['头条','百度'],status:'pending',type:'趋势',time:'10:45',content:'2026年前三季度，成渝双城经济圈地区生产总值突破8万亿元，同比增长6.8%，高于全国平均水平1.2个百分点，在西部主要经济区中增速第一。',platforms:['头条财经频道','经济日报报道']},
+  {title:'文旅融合新样本：自贡灯会数字化转型获全国关注',heat:58,sources:['抖音','微博'],status:'archived',type:'行业',time:'09:20',content:'自贡灯会首次采用全息投影+AR互动技术，打造沉浸式观灯体验。上线首周线上观灯人次突破500万，带动当地文旅收入增长45%。',platforms:['抖音热门话题','文旅部官网报道']}
+];
+
+const HOT_TOPICS = [
+  {rank:1,keyword:'低空经济试点',platform:'微博',heat:'856万',trend:'↑',status:'hot'},
+  {rank:2,keyword:'三星堆6号坑',platform:'微博',heat:'723万',trend:'↑',status:'hot'},
+  {rank:3,keyword:'AI大模型应用',platform:'知乎',heat:'651万',trend:'↑',status:'hot'},
+  {rank:4,keyword:'新能源汽车出海',platform:'百度',heat:'589万',trend:'↑',status:'up'},
+  {rank:5,keyword:'数字人民币推广',platform:'微博',heat:'512万',trend:'→',status:'ok'},
+  {rank:6,keyword:'成渝经济圈',platform:'头条',heat:'478万',trend:'↑',status:'up'},
+  {rank:7,keyword:'芯片自主研发',platform:'知乎',heat:'423万',trend:'↓',status:'ok'},
+  {rank:8,keyword:'大熊猫保护',platform:'抖音',heat:'387万',trend:'↑',status:'new'},
+  {rank:9,keyword:'乡村振兴案例',platform:'百度',heat:'342万',trend:'→',status:'ok'},
+  {rank:10,keyword:'文旅融合发展',platform:'抖音',heat:'298万',trend:'↑',status:'new'}
+];
+
+const COMPETITOR_NEWS = [
+  {time:'16:32',name:'澎湃新闻',title:'深度｜成都低空经济试点背后：产业链企业已超200家',source:'澎湃官网',spread:'23.4万',sentiment:'positive'},
+  {time:'15:45',name:'红星新闻',title:'三星堆6号坑首日发掘纪实：青铜器造型前所未见',source:'红星APP',spread:'45.8万',sentiment:'positive'},
+  {time:'14:20',name:'界面新闻',title:'四川新能源车企出海记：从内陆腹地到全球市场',source:'界面APP',spread:'12.3万',sentiment:'positive'},
+  {time:'13:15',name:'南方都市报',title:'数字人民币推广调查：成都模式能否全国复制？',source:'南都APP',spread:'18.7万',sentiment:'neutral'},
+  {time:'12:30',name:'新京报',title:'AI芯片产业链调研：成渝地区何以成为新高地？',source:'新京报网',spread:'8.9万',sentiment:'positive'},
+  {time:'11:00',name:'观察者网',title:'中美AI芯片竞争格局分析：中国企业的突围之路',source:'观察者网',spread:'34.2万',sentiment:'neutral'},
+  {time:'10:20',name:'澎湃新闻',title:'大熊猫国家公园：生态修复的四川样本',source:'澎湃APP',spread:'15.6万',sentiment:'positive'},
+  {time:'09:15',name:'红星新闻',title:'成渝双城经济圈前三季度GDP增速领跑西部',source:'红星APP',spread:'21.3万',sentiment:'positive'}
+];
+
+// ========== Chart: Trend (area line) ==========
+function renderTrendChart(containerId, data, labels, colors) {
+  const c = document.getElementById(containerId);
+  if (!c) return;
+  c.innerHTML = '';
+  const W = 600, H = 220, P = {t:20,r:20,b:30,l:50};
+  const svg = makeSVG(W, H);
+  const cw = W - P.l - P.r, ch = H - P.t - P.b;
+  const flatData = Array.isArray(data[0]) ? data.flat() : data;
+  const maxV = Math.max(...flatData) * 1.15;
+  const n = labels.length;
+  const series = Array.isArray(data[0]) ? data : [data];
+  colors = colors || ['#3b82f6','#8b5cf6','#10b981'];
+
+  for (let i = 0; i <= 4; i++) {
+    const y = P.t + ch * i / 4;
+    svg.appendChild(svgEl('line', {x1:P.l, y1:y, x2:W-P.r, y2:y, stroke:'#e2e8f0', 'stroke-width':'1'}));
+    const val = Math.round(maxV * (1 - i/4));
+    const txt = svgEl('text', {x:P.l-8, y:y+4, 'text-anchor':'end', fill:'#94a3b8', 'font-size':'11'});
+    txt.textContent = val >= 1000 ? (val/1000).toFixed(1)+'k' : val;
+    svg.appendChild(txt);
+  }
+
+  labels.forEach((lb, i) => {
+    const x = P.l + cw * i / (n-1);
+    const txt = svgEl('text', {x:x, y:H-6, 'text-anchor':'middle', fill:'#94a3b8', 'font-size':'11'});
+    txt.textContent = lb;
+    svg.appendChild(txt);
+  });
+
+  series.forEach((s, si) => {
+    const color = colors[si % colors.length];
+    let pathD = '', areaD = '';
+    s.forEach((v, i) => {
+      const x = P.l + cw * i / (n-1);
+      const y = P.t + ch * (1 - v / maxV);
+      pathD += (i===0?'M':'L') + x + ',' + y;
+      areaD += (i===0?'M':'L') + x + ',' + y;
+    });
+    areaD += `L${P.l + cw},${P.t + ch}L${P.l},${P.t + ch}Z`;
+    svg.appendChild(svgEl('path', {d:areaD, fill:color, opacity:'0.08'}));
+    svg.appendChild(svgEl('path', {d:pathD, fill:'none', stroke:color, 'stroke-width':'2.5', 'stroke-linecap':'round', 'stroke-linejoin':'round'}));
+    s.forEach((v, i) => {
+      const x = P.l + cw * i / (n-1);
+      const y = P.t + ch * (1 - v / maxV);
+      svg.appendChild(svgEl('circle', {cx:x, cy:y, r:'3.5', fill:'#fff', stroke:color, 'stroke-width':'2'}));
+    });
+  });
+
+  if (series.length > 1) {
+    const legendLabels = ['封面新闻','澎湃新闻','红星新闻'];
+    series.forEach((_, i) => {
+      const lx = P.l + i * 100;
+      svg.appendChild(svgEl('rect', {x:lx, y:4, width:12, height:3, rx:1.5, fill:colors[i]}));
+      const t = svgEl('text', {x:lx+16, y:8, fill:'#94a3b8', 'font-size':'11'});
+      t.textContent = legendLabels[i] || `系列${i+1}`;
+      svg.appendChild(t);
+    });
+  }
+  c.appendChild(svg);
+}
+
+// ========== Chart: Source Distribution ==========
+const sourceData = {
+  platform: [{name:'微博',value:4247},{name:'百度',value:3153},{name:'抖音',value:2680},{name:'知乎',value:1842},{name:'头条',value:1534},{name:'微信',value:1187},{name:'其他',value:640}],
+  region: [{name:'四川',value:4200},{name:'北京',value:3600},{name:'上海',value:2800},{name:'广东',value:2400},{name:'浙江',value:1600},{name:'重庆',value:1400},{name:'其他',value:1283}],
+  industry: [{name:'科技',value:3800},{name:'财经',value:3200},{name:'社会',value:2500},{name:'文化',value:2100},{name:'汽车',value:1500},{name:'环保',value:1100},{name:'其他',value:1083}]
+};
+
+function renderSourceChart(dim) {
+  const c = document.getElementById('chart-source');
+  if (!c) return;
+  c.innerHTML = '';
+  const data = sourceData[dim] || sourceData.platform;
+  const W = 600, H = 240, P = {t:10,r:20,b:10,l:60};
+  const svg = makeSVG(W, H);
+  const cw = W - P.l - P.r, ch = H - P.t - P.b;
+  const maxV = Math.max(...data.map(d=>d.value)) * 1.15;
+  const barH = Math.min(28, (ch / data.length) - 6);
+  const colors = ['#3b82f6','#8b5cf6','#ef4444','#f59e0b','#10b981','#ec4899','#6366f1'];
+
+  data.forEach((d, i) => {
+    const y = P.t + (ch / data.length) * i + (ch / data.length - barH) / 2;
+    const bw = cw * d.value / maxV;
+    svg.appendChild(svgEl('rect', {x:P.l, y:y, width:cw, height:barH, rx:4, fill:'#f1f5f9'}));
+    svg.appendChild(svgEl('rect', {x:P.l, y:y, width:bw, height:barH, rx:4, fill:colors[i%colors.length], opacity:'0.85'}));
+    const lb = svgEl('text', {x:P.l-8, y:y+barH/2+4, 'text-anchor':'end', fill:'#475569', 'font-size':'12'});
+    lb.textContent = d.name;
+    svg.appendChild(lb);
+    const vt = svgEl('text', {x:P.l+bw+6, y:y+barH/2+4, fill:'#475569', 'font-size':'11'});
+    vt.textContent = d.value.toLocaleString();
+    svg.appendChild(vt);
+  });
+  c.appendChild(svg);
+}
+
+// ========== Chart: Sentiment Donut ==========
+function renderSentiment(containerId, dark) {
+  const c = document.getElementById(containerId);
+  if (!c) return;
+  c.innerHTML = '';
+  const W = 300, H = 220;
+  const svg = makeSVG(W, H);
+  const cx = 150, cy = 100, R = 70, r = 45;
+  const data = [{name:'正面',value:62,color:'#10b981'},{name:'中性',value:27,color:dark?'#475569':'#94a3b8'},{name:'负面',value:11,color:'#ef4444'}];
+  const total = data.reduce((s,d)=>s+d.value,0);
+  let startAngle = -Math.PI/2;
+
+  data.forEach(d => {
+    const angle = (d.value/total) * Math.PI * 2;
+    const endAngle = startAngle + angle;
+    const x1 = cx + R * Math.cos(startAngle), y1 = cy + R * Math.sin(startAngle);
+    const x2 = cx + R * Math.cos(endAngle), y2 = cy + R * Math.sin(endAngle);
+    const x3 = cx + r * Math.cos(endAngle), y3 = cy + r * Math.sin(endAngle);
+    const x4 = cx + r * Math.cos(startAngle), y4 = cy + r * Math.sin(startAngle);
+    const large = angle > Math.PI ? 1 : 0;
+    const path = `M${x1},${y1} A${R},${R} 0 ${large} 1 ${x2},${y2} L${x3},${y3} A${r},${r} 0 ${large} 0 ${x4},${y4} Z`;
+    svg.appendChild(svgEl('path', {d:path, fill:d.color, opacity:'0.85'}));
+    startAngle = endAngle;
+  });
+
+  const ct = svgEl('text', {x:cx, y:cy-4, 'text-anchor':'middle', fill:dark?'#e2e8f0':'#1e293b', 'font-size':'22', 'font-weight':'700'});
+  ct.textContent = '62%';
+  svg.appendChild(ct);
+  const cl = svgEl('text', {x:cx, y:cy+14, 'text-anchor':'middle', fill:dark?'#64748b':'#94a3b8', 'font-size':'11'});
+  cl.textContent = '正面占比';
+  svg.appendChild(cl);
+
+  data.forEach((d, i) => {
+    const lx = 40 + i * 95, ly = H - 16;
+    svg.appendChild(svgEl('circle', {cx:lx, cy:ly, r:5, fill:d.color}));
+    const t = svgEl('text', {x:lx+10, y:ly+4, fill:dark?'#94a3b8':'#475569', 'font-size':'11'});
+    t.textContent = `${d.name} ${d.value}%`;
+    svg.appendChild(t);
+  });
+  c.appendChild(svg);
+}
+
+// ========== Chart: 24h Heatmap ==========
+function renderHeatmap(containerId, dark) {
+  const c = document.getElementById(containerId);
+  if (!c) return;
+  c.innerHTML = '';
+  const W = 600, H = 100, P = {t:10,r:10,b:20,l:40};
+  const svg = makeSVG(W, H);
+  const hours = 24;
+  const cw = W - P.l - P.r;
+  const barW = cw / hours - 2;
+  const values = [12,8,5,3,2,4,15,42,68,82,75,70,65,72,85,90,88,78,65,55,48,38,28,18];
+  const maxV = Math.max(...values);
+
+  values.forEach((v, i) => {
+    const x = P.l + (cw / hours) * i + 1;
+    const intensity = v / maxV;
+    const bh = (H - P.t - P.b) * intensity;
+    const y = H - P.b - bh;
+    const color = dark ? `rgba(96,165,250,${0.3+intensity*0.7})` : `rgba(59,130,246,${0.3+intensity*0.7})`;
+    svg.appendChild(svgEl('rect', {x:x, y:y, width:barW, height:bh, rx:2, fill:color}));
+    if (i % 3 === 0) {
+      const txt = svgEl('text', {x:x+barW/2, y:H-4, 'text-anchor':'middle', fill:dark?'#64748b':'#94a3b8', 'font-size':'10'});
+      txt.textContent = `${String(i).padStart(2,'0')}:00`;
+      svg.appendChild(txt);
+    }
+  });
+  c.appendChild(svg);
+}
+
+// ========== Word Cloud ==========
+function renderWordCloud(containerId, onClick, dark) {
+  const c = document.getElementById(containerId);
+  if (!c) return;
+  c.innerHTML = '';
+  const colors = dark ? ['#60a5fa','#a78bfa','#f87171','#fbbf24','#34d399','#f472b6','#818cf7','#2dd4bf'] : ['#3b82f6','#8b5cf6','#ef4444','#f59e0b','#10b981','#ec4899','#6366f1','#14b8a6'];
+  HOT_WORDS.forEach((w, i) => {
+    const span = document.createElement('span');
+    span.textContent = w.text;
+    span.style.fontSize = w.size + 'px';
+    span.style.color = colors[i % colors.length];
+    span.style.fontWeight = w.size > 18 ? '700' : '500';
+    span.title = `热度: ${w.heat.toLocaleString()}`;
+    if (onClick) span.addEventListener('click', () => onClick(w, span));
+    c.appendChild(span);
+  });
+}
+
+// ========== Hot Topic Table ==========
+function renderHotTopicTable() {
+  const statusMap = {hot:['tag-hot','🔥 热门'],new:['tag-new','🆕 新'],up:['tag-up','📈 上升'],ok:['tag-ok','✓ 稳定']};
+  const tbody = document.querySelector('#hotTopicTable tbody');
+  if (!tbody) return;
+  tbody.innerHTML = HOT_TOPICS.map(t => {
+    const rankCls = t.rank<=3 ? `rank-${t.rank}` : 'rank-n';
+    const st = statusMap[t.status];
+    return `<tr style="cursor:pointer"><td><span class="rank ${rankCls}">${t.rank}</span></td><td style="font-weight:600;color:var(--text-1)">${t.keyword}</td><td>${t.platform}</td><td style="font-weight:600;color:var(--accent3)">${t.heat}</td><td style="color:${t.trend==='↑'?'var(--accent5)':t.trend==='↓'?'var(--accent3)':'var(--text-3)'}">${t.trend}</td><td><span class="tag ${st[0]}">${st[1]}</span></td><td><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();showToast('已加入关注')">加入关注</button> <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();showToast('已创建线索')">创建线索</button> <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();this.closest('tr').style.opacity='0.4'">忽略</button></td></tr>`;
+  }).join('');
+}
+
+// ========== Keyword Trend Chart ==========
+function renderKeywordTrend() {
+  const data = [120,180,250,380,520,680,850,920,856,820,780,750,720,690,710,750,800,860,920,856,950,980,950,900];
+  renderTrendChart('chart-keyword-trend', data, ['0','2','4','6','8','10','12','14','16','18','20','22'], ['#ef4444']);
+}
+
+// ========== Competitor Cards ==========
+function renderCompetitorCards() {
+  const container = document.getElementById('competitorCards');
+  if (!container) return;
+  container.innerHTML = COMPETITORS.map(c => `
+    <div class="competitor-card" onclick="showCompetitorDetail('${c.name}')">
+      <div class="competitor-logo" style="background:${c.color}">${c.letter}</div>
+      <div class="competitor-info">
+        <h4>${c.name}</h4>
+        <p>${c.desc}</p>
+        <div class="competitor-stats">
+          <div class="competitor-stat"><strong>${c.articles}</strong>今日发稿</div>
+          <div class="competitor-stat"><strong>${c.hotHits}</strong>热搜命中</div>
+          <div class="competitor-stat"><strong>${c.followers}</strong>粉丝量</div>
+        </div>
+        <div style="margin-top:10px;">
+          <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openAlertSettingModal('${c.name}')">🔔 设置预警</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ========== Competitor News Table ==========
+function renderCompetitorNews() {
+  const tbody = document.querySelector('#competitorNewsTable tbody');
+  if (!tbody) return;
+  const sentMap = {positive:['tag-positive','正面'],neutral:['tag-neutral','中性'],negative:['tag-negative','负面']};
+  tbody.innerHTML = COMPETITOR_NEWS.map(n => {
+    const st = sentMap[n.sentiment];
+    return `<tr><td>${n.time}</td><td style="font-weight:600">${n.name}</td><td>${n.title}</td><td>${n.source}</td><td>${n.spread}</td><td><span class="tag ${st[0]}">${st[1]}</span></td></tr>`;
+  }).join('');
+}
+
+// ========== Competitor Volume Chart ==========
+function renderCompeteVolume() {
+  const days = ['11-04','11-05','11-06','11-07','11-08','11-09','11-10'];
+  const data = [
+    [380,420,390,480,450,520,560],
+    [320,350,310,390,420,380,450],
+    [280,310,290,350,380,340,410]
+  ];
+  renderTrendChart('chart-compete-volume', data, days, ['#3b82f6','#ef4444','#f59e0b']);
+}
+
+// ========== Lead Cards ==========
+function renderLeadCards(filter) {
+  const container = document.getElementById('leadCards');
+  if (!container) return;
+  let leads = LEADS;
+  if (filter && filter !== 'all') {
+    leads = LEADS.filter(l => l.status === filter);
+  }
+  const statusMap = {pending:['tag-pending','待跟进'],active:['tag-active','跟进中'],converted:['tag-done','已转化'],archived:['tag-archive','已归档']};
+  container.innerHTML = leads.map((l, idx) => {
+    const st = statusMap[l.status];
+    const realIdx = LEADS.indexOf(l);
+    return `<div class="lead-card">
+      <div style="cursor:pointer;" onclick="showLeadDetail(${realIdx})">
+        <div class="lead-card-header">
+          <div class="lead-card-title">${l.title}</div>
+          <div class="lead-card-heat">🔥 ${l.heat}</div>
+        </div>
+        <div class="lead-card-sources">${l.sources.map(s=>`<span class="source-tag">${s}</span>`).join('')}</div>
+        <div class="lead-card-meta">
+          <span class="tag ${st[0]}">${st[1]}</span>
+          <span class="tag tag-info">${l.type}</span>
+          <span>⏰ ${l.time}</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);">
+        <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();showToast('已标记跟进')">📌 标记跟进</button>
+        <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();showAssignModal(${realIdx})">👤 分配给</button>
+        <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();showToast('编辑标签功能')">🏷 编辑标签</button>
+        <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();showToast('已归档');this.closest('.lead-card').style.opacity='0.4'">📦 归档</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ========== Lead Source Mini Chart ==========
+function renderLeadSourceMini() {
+  const c = document.getElementById('chart-lead-source');
+  if (!c) return;
+  c.innerHTML = '';
+  const W = 200, H = 200, cx = 100, cy = 90, R = 70, r = 40;
+  const svg = makeSVG(W, H);
+  const data = [{name:'微博',value:35,color:'#3b82f6'},{name:'百度',value:25,color:'#8b5cf6'},{name:'抖音',value:20,color:'#ef4444'},{name:'知乎',value:12,color:'#f59e0b'},{name:'其他',value:8,color:'#10b981'}];
+  const total = data.reduce((s,d)=>s+d.value,0);
+  let startAngle = -Math.PI/2;
+  data.forEach(d => {
+    const angle = (d.value/total) * Math.PI * 2;
+    const endAngle = startAngle + angle;
+    const x1 = cx + R * Math.cos(startAngle), y1 = cy + R * Math.sin(startAngle);
+    const x2 = cx + R * Math.cos(endAngle), y2 = cy + R * Math.sin(endAngle);
+    const x3 = cx + r * Math.cos(endAngle), y3 = cy + r * Math.sin(endAngle);
+    const x4 = cx + r * Math.cos(startAngle), y4 = cy + r * Math.sin(startAngle);
+    const large = angle > Math.PI ? 1 : 0;
+    svg.appendChild(svgEl('path', {d:`M${x1},${y1} A${R},${R} 0 ${large} 1 ${x2},${y2} L${x3},${y3} A${r},${r} 0 ${large} 0 ${x4},${y4} Z`, fill:d.color, opacity:'0.85'}));
+    startAngle = endAngle;
+  });
+  data.forEach((d, i) => {
+    const ly = H - 12;
+    const lx = 10 + i * 40;
+    svg.appendChild(svgEl('circle', {cx:lx, cy:ly, r:4, fill:d.color}));
+    const t = svgEl('text', {x:lx+8, y:ly+3, fill:'#475569', 'font-size':'9'});
+    t.textContent = `${d.name}`;
+    svg.appendChild(t);
+  });
+  c.appendChild(svg);
+}
+
+// ========== Comparison Chart ==========
+function renderCompareChart() {
+  const labels = ['10-01','10-08','10-15','10-22','10-29','11-01','11-05','11-09'];
+  const data = [
+    [9800,10200,10800,11500,12200,13100,14200,15283],
+    [8500,8900,9400,10100,10600,11200,12000,13100]
+  ];
+  renderTrendChart('chart-compare', data, labels, ['#3b82f6','#94a3b8']);
+}
+
+// ========== Detail Modals ==========
+function showLeadDetail(idx) {
+  const lead = LEADS[idx];
+  if (!lead) return;
+  const statusMap = {pending:['tag-pending','待跟进'],active:['tag-active','跟进中'],converted:['tag-done','已转化'],archived:['tag-archive','已归档']};
+  const st = statusMap[lead.status];
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `<div class="modal modal-lg">
+    <span class="modal-close" onclick="this.closest('.modal-overlay').remove()">✕</span>
+    <h3>${lead.title}</h3>
+    <div class="detail-section">
+      <div style="display:flex;gap:8px;margin-bottom:12px;">
+        <span class="tag ${st[0]}" style="font-size:12px;padding:4px 12px;">${st[1]}</span>
+        <span class="tag tag-info" style="font-size:12px;padding:4px 12px;">${lead.type}</span>
+        <span style="font-size:13px;color:var(--accent3);font-weight:600;">🔥 热度 ${lead.heat}</span>
+      </div>
+      <p style="font-size:13px;line-height:1.8;color:var(--text-2);">${lead.content}</p>
+    </div>
+    <div class="detail-section">
+      <h4>传播渠道</h4>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;">
+        ${lead.platforms.map(p => `<span class="source-tag" style="padding:4px 12px;font-size:12px;">${p}</span>`).join('')}
+      </div>
+    </div>
+    <div class="detail-section">
+      <h4>热度趋势 (迷你图)</h4>
+      <div class="chart-container" id="modal-mini-trend"></div>
+    </div>
+    <div class="detail-section">
+      <h4>来源链接</h4>
+      <div style="font-size:13px;color:var(--text-2);">
+        ${lead.sources.map(s => `<div style="padding:4px 0;"><a href="#">📎 ${s} - 查看原文</a></div>`).join('')}
+      </div>
+    </div>
+    <div class="action-btns">
+      <button class="btn btn-primary" onclick="showToast('已标记跟进');this.closest('.modal-overlay').remove()">📌 标记跟进</button>
+      <button class="btn btn-ghost" onclick="showAssignModal(${idx})">👤 分配给</button>
+      <button class="btn btn-ghost" onclick="showToast('已导出')">📥 导出</button>
+      <button class="btn btn-ghost" onclick="showToast('链接已复制')">🔗 分享</button>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  // Render mini trend
+  setTimeout(() => {
+    const seed = lead.heat * 13;
+    const miniData = Array.from({length:12}, (_,i) => Math.round(50 + Math.sin(i*0.8+seed)*30 + lead.heat/3 + Math.random()*10));
+    renderTrendChart('modal-mini-trend', miniData, ['1h','2h','3h','4h','5h','6h','7h','8h','9h','10h','11h','12h'], ['#3b82f6']);
+  }, 100);
+}
+
+function showAssignModal(leadIdx) {
+  showToast('分配功能：可选择王记者、李编辑、刘运营等团队成员');
+}
+
+function showHotTopicDetail(keyword) {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `<div class="modal modal-lg">
+    <span class="modal-close" onclick="this.closest('.modal-overlay').remove()">✕</span>
+    <h3>热搜详情 - ${keyword}</h3>
+    <div class="detail-section">
+      <h4>跨平台热度趋势</h4>
+      <div class="chart-container" id="modal-hot-trend"></div>
+    </div>
+    <div class="detail-section">
+      <h4>相关报道</h4>
+      <table class="data-table">
+        <thead><tr><th>时间</th><th>来源</th><th>标题</th><th>传播量</th></tr></thead>
+        <tbody>
+          <tr><td>16:30</td><td>封面新闻</td><td>${keyword}最新进展：多方回应</td><td>23.4万</td></tr>
+          <tr><td>15:45</td><td>澎湃新闻</td><td>深度解读：${keyword}背后的产业逻辑</td><td>18.7万</td></tr>
+          <tr><td>14:20</td><td>红星新闻</td><td>${keyword}引发行业关注</td><td>12.3万</td></tr>
+          <tr><td>13:00</td><td>界面新闻</td><td>资本视角看${keyword}</td><td>8.9万</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="detail-section">
+      <h4>情感分布</h4>
+      <div style="display:flex;gap:16px;">
+        <div style="flex:1;text-align:center;padding:12px;background:#f0fdf4;border-radius:8px;"><div style="font-size:24px;font-weight:700;color:#16a34a;">68%</div><div style="font-size:12px;color:var(--text-3);">正面</div></div>
+        <div style="flex:1;text-align:center;padding:12px;background:#f1f5f9;border-radius:8px;"><div style="font-size:24px;font-weight:700;color:#64748b;">22%</div><div style="font-size:12px;color:var(--text-3);">中性</div></div>
+        <div style="flex:1;text-align:center;padding:12px;background:#fef2f2;border-radius:8px;"><div style="font-size:24px;font-weight:700;color:#dc2626;">10%</div><div style="font-size:12px;color:var(--text-3);">负面</div></div>
+      </div>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  setTimeout(() => {
+    const seed = keyword.length * 17;
+    const d1 = Array.from({length:12}, (_,i) => Math.round(100 + Math.sin(i*0.6+seed)*200 + Math.random()*50 + 300));
+    const d2 = Array.from({length:12}, (_,i) => Math.round(80 + Math.sin(i*0.5+seed+1)*150 + Math.random()*40 + 200));
+    renderTrendChart('modal-hot-trend', [d1, d2], ['微博','百度','知乎','头条','抖音','微信','微博','百度','知乎','头条','抖音','微信'], ['#3b82f6','#ef4444']);
+  }, 100);
+}
+
+function showCompetitorDetail(name) {
+  const comp = COMPETITORS.find(c => c.name === name);
+  if (!comp) return;
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `<div class="modal modal-lg">
+    <span class="modal-close" onclick="this.closest('.modal-overlay').remove()">✕</span>
+    <h3 style="display:flex;align-items:center;gap:12px;"><span style="width:36px;height:36px;border-radius:10px;background:${comp.color};color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;">${comp.letter}</span>${comp.name}</h3>
+    <p style="color:var(--text-3);font-size:13px;margin-bottom:16px;">${comp.desc}</p>
+    <div class="detail-section">
+      <div class="detail-meta">
+        <div class="detail-meta-item"><span>今日发稿</span><span>${comp.articles} 篇</span></div>
+        <div class="detail-meta-item"><span>热搜命中</span><span>${comp.hotHits} 次</span></div>
+        <div class="detail-meta-item"><span>粉丝量</span><span>${comp.followers}</span></div>
+        <div class="detail-meta-item"><span>声量排名</span><span>#${COMPETITORS.indexOf(comp)+1}</span></div>
+      </div>
+    </div>
+    <div class="detail-section">
+      <h4>声量趋势 (7日)</h4>
+      <div class="chart-container" id="modal-comp-trend"></div>
+    </div>
+    <div class="detail-section">
+      <h4>近期报道</h4>
+      <table class="data-table">
+        <thead><tr><th>时间</th><th>标题</th><th>传播</th><th>情感</th></tr></thead>
+        <tbody>
+          ${COMPETITOR_NEWS.filter(n=>n.name===name).map(n=>`<tr><td>${n.time}</td><td>${n.title}</td><td>${n.spread}</td><td><span class="tag tag-${n.sentiment==='positive'?'positive':n.sentiment==='negative'?'negative':'neutral'}">${n.sentiment==='positive'?'正面':n.sentiment==='negative'?'负面':'中性'}</span></td></tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  setTimeout(() => {
+    const seed = name.length * 23;
+    const data = Array.from({length:7}, (_,i) => Math.round(20 + Math.sin(i*0.9+seed)*15 + comp.articles/3 + Math.random()*10));
+    renderTrendChart('modal-comp-trend', data, ['11-04','11-05','11-06','11-07','11-08','11-09','11-10'], [comp.color]);
+  }, 100);
+}
+
+// ========== Lead Tab Filtering ==========
+document.querySelectorAll('#leadTabs .tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    renderLeadCards(tab.dataset.tab);
+  });
+});
+
+// ========== Trend Range Switch ==========
+function switchTrendRange(range, btn) {
+  const parent = btn.closest('.panel-filter');
+  parent.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const dataMap = {
+    '7d': [[9800,10500,11200,12100,13500,14200,15283]],
+    '14d': [[8200,8800,9100,9500,10200,10800,11200,11800,12500,13100,13500,14200,14800,15283]],
+    '30d': [[6500,7000,7500,8000,8500,8800,9100,9500,9800,10200,10500,10800,11200,11500,11800,12100,12500,12800,13100,13500,13800,14200,14500,14800,15000,15100,15200,15283,15200,15283]]
+  };
+  const labelMap = {
+    '7d': ['11-04','11-05','11-06','11-07','11-08','11-09','11-10'],
+    '14d': ['10-28','10-30','11-01','11-03','11-04','11-05','11-06','11-07','11-08','11-09','11-10','','',''],
+    '30d': Array.from({length:30}, (_,i) => `${10+Math.floor((i+11)/31)}-${String((i+11)%31+1).padStart(2,'0')}`)
+  };
+  renderTrendChart('chart-trend-7d', dataMap[range], labelMap[range].slice(0, dataMap[range][0].length));
+}
+
+// ========== UNIFIED BIGSCREEN PAGE ==========
+
+const WIDGETS = [
+  {icon:'📈',name:'折线图',type:'line'},
+  {icon:'📊',name:'柱状图',type:'bar'},
+  {icon:'🥧',name:'饼图/环形图',type:'pie'},
+  {icon:'🔥',name:'热力图',type:'heatmap'},
+  {icon:'☁',name:'词云',type:'wordcloud'},
+  {icon:'🔢',name:'数字卡片',type:'kpi'},
+  {icon:'📋',name:'数据表格',type:'table'},
+  {icon:'⚠',name:'告警列表',type:'alert'},
+  {icon:'📅',name:'时间线',type:'timeline'},
+  {icon:'🗺',name:'地图',type:'map'},
+  {icon:'📊',name:'进度条',type:'progress'},
+  {icon:'📜',name:'滚动列表',type:'scrolllist'}
+];
+
+// Pre-built templates
+const BUILTIN_TEMPLATES = {
+  overview: {
+    name: '线索总览模板',
+    widgets: [
+      {type:5,title:'今日线索量'},{type:5,title:'热搜命中'},{type:5,title:'负面预警'},{type:5,title:'传播影响力'},
+      {type:0,title:'7日趋势'},{type:4,title:'热词云'},{type:1,title:'来源分布'},{type:2,title:'情感分布'},
+      {type:3,title:'24h热力图'},{type:7,title:'实时告警'}
+    ],
+    settings: {refreshInterval:'60',autoRotate:'10',theme:'deepblue'}
+  },
+  competitor: {
+    name: '竞品分析模板',
+    widgets: [
+      {type:5,title:'监控竞品数'},{type:5,title:'今日发稿'},{type:5,title:'热搜命中'},
+      {type:1,title:'声量对比'},{type:0,title:'趋势图'},{type:6,title:'竞品动态表'},{type:10,title:'完成进度'}
+    ],
+    settings: {refreshInterval:'60',autoRotate:'off',theme:'deepblue'}
+  },
+  hottopic: {
+    name: '热搜追踪模板',
+    widgets: [
+      {type:5,title:'热搜总量'},{type:5,title:'新增话题'},{type:5,title:'平台覆盖'},
+      {type:4,title:'热词云'},{type:0,title:'热度趋势'},{type:8,title:'时间线'},{type:6,title:'热搜榜单'},{type:11,title:'实时滚动'}
+    ],
+    settings: {refreshInterval:'30',autoRotate:'10',theme:'deepblue'}
+  }
+};
+
+let bsCanvasWidgets = []; // Array of {type, title, gridIdx} or null for empty slots
+let bsCurrentTemplate = 'overview';
+let bsComponentLibraryCollapsed = false;
+
+// Generate mini SVG preview for a widget type
+function getMiniPreview(type, width, height) {
+  width = width || 120;
+  height = height || 80;
+  const w = WIDGETS[type];
+  if (!w) return '';
+
+  switch(w.type) {
+    case 'line':
+      return `<svg width="${width}" height="${height}" viewBox="0 0 120 80">
+        <path d="M10,60 Q30,40 50,50 T90,30 L110,20" fill="none" stroke="#3b82f6" stroke-width="2" opacity="0.7"/>
+        <path d="M10,70 Q30,55 50,60 T90,45 L110,40" fill="none" stroke="#8b5cf6" stroke-width="2" opacity="0.5"/>
+        <path d="M10,65 Q30,50 50,55 T90,35 L110,30" fill="none" stroke="#10b981" stroke-width="2" opacity="0.6"/>
+      </svg>`;
+    case 'bar':
+      return `<svg width="${width}" height="${height}" viewBox="0 0 120 80">
+        <rect x="10" y="40" width="14" height="30" rx="2" fill="#3b82f6" opacity="0.7"/>
+        <rect x="28" y="25" width="14" height="45" rx="2" fill="#3b82f6" opacity="0.8"/>
+        <rect x="46" y="50" width="14" height="20" rx="2" fill="#3b82f6" opacity="0.6"/>
+        <rect x="64" y="15" width="14" height="55" rx="2" fill="#3b82f6" opacity="0.9"/>
+        <rect x="82" y="35" width="14" height="35" rx="2" fill="#3b82f6" opacity="0.7"/>
+        <rect x="100" y="45" width="14" height="25" rx="2" fill="#3b82f6" opacity="0.5"/>
+      </svg>`;
+    case 'pie':
+      return `<svg width="${width}" height="${height}" viewBox="0 0 120 80">
+        <circle cx="60" cy="40" r="30" fill="none" stroke="#3b82f6" stroke-width="12" stroke-dasharray="60 140" opacity="0.8"/>
+        <circle cx="60" cy="40" r="30" fill="none" stroke="#8b5cf6" stroke-width="12" stroke-dasharray="40 140" stroke-dashoffset="-60" opacity="0.7"/>
+        <circle cx="60" cy="40" r="30" fill="none" stroke="#10b981" stroke-width="12" stroke-dasharray="30 140" stroke-dashoffset="-100" opacity="0.6"/>
+        <circle cx="60" cy="40" r="18" fill="#fff"/>
+      </svg>`;
+    case 'heatmap':
+      let rects = '';
+      for(let r=0;r<3;r++) for(let c=0;c<6;c++) {
+        const opacity = (Math.random()*0.6+0.2).toFixed(2);
+        rects += `<rect x="${10+c*18}" y="${10+r*22}" width="16" height="20" rx="2" fill="#3b82f6" opacity="${opacity}"/>`;
+      }
+      return `<svg width="${width}" height="${height}" viewBox="0 0 120 80">${rects}</svg>`;
+    case 'wordcloud':
+      return `<svg width="${width}" height="${height}" viewBox="0 0 120 80">
+        <text x="60" y="30" text-anchor="middle" font-size="12" fill="#3b82f6" font-weight="700">AI大模型</text>
+        <text x="40" y="50" text-anchor="middle" font-size="9" fill="#8b5cf6">低空经济</text>
+        <text x="85" y="48" text-anchor="middle" font-size="10" fill="#ef4444">三星堆</text>
+        <text x="60" y="65" text-anchor="middle" font-size="8" fill="#10b981">新能源</text>
+      </svg>`;
+    case 'kpi':
+      return `<svg width="${width}" height="${height}" viewBox="0 0 120 80">
+        <text x="60" y="45" text-anchor="middle" font-size="24" fill="#1e293b" font-weight="800">12,847</text>
+        <text x="60" y="65" text-anchor="middle" font-size="10" fill="#94a3b8">今日线索</text>
+      </svg>`;
+    case 'table':
+      return `<svg width="${width}" height="${height}" viewBox="0 0 120 80">
+        <rect x="10" y="10" width="100" height="12" rx="2" fill="#f1f5f9"/>
+        <rect x="10" y="26" width="100" height="10" rx="1" fill="#fff" stroke="#e2e8f0" stroke-width="0.5"/>
+        <rect x="10" y="40" width="100" height="10" rx="1" fill="#fff" stroke="#e2e8f0" stroke-width="0.5"/>
+        <rect x="10" y="54" width="100" height="10" rx="1" fill="#fff" stroke="#e2e8f0" stroke-width="0.5"/>
+        <line x1="10" y1="22" x2="110" y2="22" stroke="#e2e8f0" stroke-width="1"/>
+      </svg>`;
+    case 'alert':
+      return `<svg width="${width}" height="${height}" viewBox="0 0 120 80">
+        <circle cx="16" cy="20" r="4" fill="#ef4444"/><rect x="26" y="16" width="70" height="8" rx="2" fill="#f1f5f9"/>
+        <circle cx="16" cy="40" r="4" fill="#f59e0b"/><rect x="26" y="36" width="60" height="8" rx="2" fill="#f1f5f9"/>
+        <circle cx="16" cy="60" r="4" fill="#3b82f6"/><rect x="26" y="56" width="80" height="8" rx="2" fill="#f1f5f9"/>
+      </svg>`;
+    case 'timeline':
+      return `<svg width="${width}" height="${height}" viewBox="0 0 120 80">
+        <line x1="20" y1="10" x2="20" y2="70" stroke="#3b82f6" stroke-width="2" opacity="0.3"/>
+        <circle cx="20" cy="20" r="4" fill="#3b82f6"/><rect x="30" y="16" width="60" height="8" rx="2" fill="#f1f5f9"/>
+        <circle cx="20" cy="40" r="4" fill="#8b5cf6"/><rect x="30" y="36" width="50" height="8" rx="2" fill="#f1f5f9"/>
+        <circle cx="20" cy="60" r="4" fill="#10b981"/><rect x="30" y="56" width="70" height="8" rx="2" fill="#f1f5f9"/>
+      </svg>`;
+    case 'map':
+      return `<svg width="${width}" height="${height}" viewBox="0 0 120 80">
+        <path d="M30,15 L50,10 L80,15 L100,25 L105,45 L95,60 L75,68 L55,65 L35,58 L25,45 L20,30 Z" fill="none" stroke="#3b82f6" stroke-width="1.5" opacity="0.4"/>
+        <circle cx="60" cy="35" r="3" fill="#ef4444"/><circle cx="75" cy="45" r="2.5" fill="#3b82f6"/><circle cx="45" cy="50" r="2" fill="#10b981"/>
+      </svg>`;
+    case 'progress':
+      return `<svg width="${width}" height="${height}" viewBox="0 0 120 80">
+        <rect x="10" y="15" width="100" height="10" rx="5" fill="#f1f5f9"/><rect x="10" y="15" width="75" height="10" rx="5" fill="#3b82f6" opacity="0.8"/>
+        <rect x="10" y="35" width="100" height="10" rx="5" fill="#f1f5f9"/><rect x="10" y="35" width="60" height="10" rx="5" fill="#8b5cf6" opacity="0.7"/>
+        <rect x="10" y="55" width="100" height="10" rx="5" fill="#f1f5f9"/><rect x="10" y="55" width="90" height="10" rx="5" fill="#10b981" opacity="0.8"/>
+      </svg>`;
+    case 'scrolllist':
+      return `<svg width="${width}" height="${height}" viewBox="0 0 120 80">
+        <rect x="10" y="12" width="100" height="8" rx="2" fill="#f1f5f9"/>
+        <rect x="10" y="24" width="100" height="8" rx="2" fill="#f1f5f9"/>
+        <rect x="10" y="36" width="100" height="8" rx="2" fill="#f1f5f9"/>
+        <rect x="10" y="48" width="100" height="8" rx="2" fill="#f1f5f9"/>
+        <rect x="10" y="60" width="100" height="8" rx="2" fill="#f1f5f9"/>
+      </svg>`;
+    default:
+      return `<div style="font-size:32px;">${w.icon}</div>`;
+  }
+}
+
+// Initialize the unified bigscreen page
+function initUnifiedBigscreen() {
+  // Render component library
+  const grid = document.getElementById('bsComponentGrid');
+  if (grid) {
+    grid.innerHTML = WIDGETS.map((w, i) =>
+      `<div class="bs-mini-widget" onclick="addBsWidget(${i})">
+        <span class="widget-icon">${w.icon}</span>
+        <span>${w.name}</span>
+      </div>`
+    ).join('');
+  }
+
+  // Load default template
+  loadBuiltinTemplate(document.querySelector('.bs-template-chip[data-tpl="overview"]'), 'overview');
+
+  // Load custom templates from localStorage
+  refreshCustomTemplateChips();
+}
+
+function toggleComponentLibrary() {
+  bsComponentLibraryCollapsed = !bsComponentLibraryCollapsed;
+  const lib = document.getElementById('bsComponentLibrary');
+  const icon = document.getElementById('componentToggleIcon');
+  if (bsComponentLibraryCollapsed) {
+    lib.classList.add('collapsed');
+    icon.textContent = '▶';
+  } else {
+    lib.classList.remove('collapsed');
+    icon.textContent = '▼';
+  }
+}
+
+function addBsWidget(widgetIdx) {
+  // Find first empty slot
+  let targetIdx = -1;
+  for (let i = 0; i < 24; i++) {
+    if (!bsCanvasWidgets[i]) {
+      targetIdx = i;
+      break;
+    }
+  }
+  if (targetIdx === -1) {
+    showToast('画布已满，请先移除部分组件');
+    return;
+  }
+
+  const w = WIDGETS[widgetIdx];
+  bsCanvasWidgets[targetIdx] = {type: widgetIdx, title: w.name, gridIdx: targetIdx};
+  renderBsCanvas();
+  renderBsPreview();
+  updateTemplateInfo();
+  showToast(`已添加「${w.name}」`);
+}
+
+function removeBsWidget(idx) {
+  bsCanvasWidgets[idx] = null;
+  renderBsCanvas();
+  renderBsPreview();
+  updateTemplateInfo();
+  showToast('已移除组件');
+}
+
+function renderBsCanvas() {
+  const grid = document.getElementById('bsCanvasGrid');
+  if (!grid) return;
+  grid.innerHTML = '';
+
+  for (let i = 0; i < 24; i++) {
+    const slot = document.createElement('div');
+    slot.className = 'bs-canvas-slot';
+
+    if (bsCanvasWidgets[i]) {
+      const widget = bsCanvasWidgets[i];
+      const w = WIDGETS[widget.type];
+      slot.classList.add('filled');
+      slot.innerHTML = `
+        <div class="slot-preview">${getMiniPreview(widget.type, 120, 80)}</div>
+        <div class="slot-title" onclick="editWidgetTitle(${i}, event)">${widget.title}</div>
+        <div class="slot-remove" onclick="event.stopPropagation();removeBsWidget(${i})">✕</div>
+        <div class="slot-drag">⋮⋮</div>
+      `;
+    } else {
+      slot.innerHTML = '<div style="text-align:center;"><div style="font-size:20px;opacity:0.3;">+</div><div style="font-size:11px;opacity:0.5;">添加组件</div></div>';
+      slot.onclick = () => showToast('请先从上方组件库选择组件');
+    }
+
+    grid.appendChild(slot);
+  }
+
+  const count = bsCanvasWidgets.filter(Boolean).length;
+  document.getElementById('bsCanvasCount').textContent = `画布已放置 ${count} 个组件`;
+}
+
+function editWidgetTitle(idx, event) {
+  event.stopPropagation();
+  const widget = bsCanvasWidgets[idx];
+  if (!widget) return;
+
+  const newTitle = prompt('输入新的组件标题:', widget.title);
+  if (newTitle && newTitle.trim()) {
+    widget.title = newTitle.trim();
+    renderBsCanvas();
+    renderBsPreview();
+  }
+}
+
+function clearCanvas() {
+  bsCanvasWidgets = [];
+  renderBsCanvas();
+  renderBsPreview();
+  updateTemplateInfo();
+  showToast('画布已清空');
+}
+
+function renderBsPreview() {
+  const previewGrid = document.getElementById('bsPreviewGrid');
+  if (!previewGrid) return;
+  previewGrid.innerHTML = '';
+
+  const widgets = bsCanvasWidgets.filter(Boolean);
+  if (widgets.length === 0) {
+    previewGrid.innerHTML = '<div style="grid-column:1/-1;grid-row:1/-1;display:flex;align-items:center;justify-content:center;color:#64748b;font-size:12px;">暂无组件，请在左侧添加</div>';
+    return;
+  }
+
+  // Determine grid layout based on widget count
+  const kpiWidgets = widgets.filter(w => w.type === 5);
+  const otherWidgets = widgets.filter(w => w.type !== 5);
+
+  // KPI cards row
+  if (kpiWidgets.length > 0) {
+    const kpiRow = document.createElement('div');
+    kpiRow.style.gridColumn = '1 / -1';
+    kpiRow.style.display = 'flex';
+    kpiRow.style.gap = '4px';
+    kpiWidgets.forEach(w => {
+      const kpiDiv = document.createElement('div');
+      kpiDiv.className = 'preview-widget';
+      kpiDiv.style.flex = '1';
+      kpiDiv.style.padding = '6px';
+      kpiDiv.style.textAlign = 'center';
+      kpiDiv.style.fontSize = '10px';
+      kpiDiv.style.color = '#60a5fa';
+      kpiDiv.innerHTML = `<div style="font-size:14px;font-weight:700;">${Math.floor(Math.random()*10000)}</div><div style="font-size:8px;color:#64748b;">${w.title}</div>`;
+      kpiRow.appendChild(kpiDiv);
+    });
+    previewGrid.appendChild(kpiRow);
+  }
+
+  // Other widgets in grid
+  otherWidgets.forEach(w => {
+    const widgetDiv = document.createElement('div');
+    widgetDiv.className = 'preview-widget';
+    widgetDiv.style.padding = '4px';
+    widgetDiv.innerHTML = `<div style="font-size:8px;color:#94a3b8;margin-bottom:2px;">${w.title}</div>`;
+    previewGrid.appendChild(widgetDiv);
+  });
+}
+
+function loadBuiltinTemplate(el, templateKey) {
+  // Update active chip
+  document.querySelectorAll('.bs-template-chip').forEach(c => c.classList.remove('active'));
+  if (el) el.classList.add('active');
+
+  const template = BUILTIN_TEMPLATES[templateKey];
+  if (!template) return;
+
+  bsCurrentTemplate = templateKey;
+  bsCanvasWidgets = [];
+
+  // Place widgets from template
+  template.widgets.forEach((w, i) => {
+    if (i < 24) {
+      bsCanvasWidgets[i] = {type: w.type, title: w.title, gridIdx: i};
+    }
+  });
+
+  // Apply settings
+  document.getElementById('bsRefreshInterval').value = template.settings.refreshInterval;
+  document.getElementById('bsAutoRotate').value = template.settings.autoRotate;
+  document.getElementById('bsTheme').value = template.settings.theme;
+  document.getElementById('bsTemplateName').value = template.name;
+  document.getElementById('bsTemplateCreated').textContent = '2026-11-10 (内置)';
+
+  renderBsCanvas();
+  renderBsPreview();
+  updateTemplateInfo();
+  showToast(`已加载模板: ${template.name}`);
+}
+
+function createNewTemplate() {
+  const name = prompt('请输入新模板名称:');
+  if (!name || !name.trim()) return;
+
+  // Clear canvas
+  bsCanvasWidgets = [];
+  bsCurrentTemplate = 'custom';
+
+  // Update template name
+  document.getElementById('bsTemplateName').value = name.trim();
+  document.getElementById('bsTemplateCreated').textContent = new Date().toISOString().split('T')[0];
+
+  // Deselect all chips
+  document.querySelectorAll('.bs-template-chip').forEach(c => c.classList.remove('active'));
+
+  renderBsCanvas();
+  renderBsPreview();
+  updateTemplateInfo();
+  showToast(`已创建新模板: ${name.trim()}`);
+}
+
+function saveTemplate() {
+  const widgets = bsCanvasWidgets.filter(Boolean);
+  if (widgets.length === 0) {
+    showToast('画布为空，请先添加组件');
+    return;
+  }
+
+  const templateName = document.getElementById('bsTemplateName').value || '未命名模板';
+
+  const template = {
+    id: 'tpl_' + Date.now(),
+    name: templateName,
+    widgets: widgets.map(w => ({type: w.type, title: w.title, gridIdx: w.gridIdx})),
+    settings: {
+      refreshInterval: document.getElementById('bsRefreshInterval').value,
+      autoRotate: document.getElementById('bsAutoRotate').value,
+      theme: document.getElementById('bsTheme').value
+    },
+    createdAt: new Date().toISOString()
+  };
+
+  // Load existing templates
+  let templates = [];
+  try {
+    const stored = localStorage.getItem('cluehub_templates');
+    if (stored) templates = JSON.parse(stored);
+  } catch(e) {}
+
+  // Add new template
+  templates.push(template);
+
+  // Save to localStorage
+  localStorage.setItem('cluehub_templates', JSON.stringify(templates));
+
+  refreshCustomTemplateChips();
+  showToast(`模板「${templateName}」已保存成功`);
+}
+
+function refreshCustomTemplateChips() {
+  const container = document.getElementById('bsCustomTemplateChips');
+  if (!container) return;
+
+  let templates = [];
+  try {
+    const stored = localStorage.getItem('cluehub_templates');
+    if (stored) templates = JSON.parse(stored);
+  } catch(e) {}
+
+  container.innerHTML = templates.map(t =>
+    `<div class="bs-template-chip" data-tpl-id="${t.id}" onclick="loadCustomTemplate('${t.id}')">
+      <span class="chip-icon">💾</span>${t.name}
+      <span onclick="event.stopPropagation();deleteCustomTemplate('${t.id}')" style="margin-left:4px;font-size:10px;opacity:0.5;cursor:pointer;">✕</span>
+    </div>`
+  ).join('');
+}
+
+function loadCustomTemplate(templateId) {
+  let templates = [];
+  try {
+    const stored = localStorage.getItem('cluehub_templates');
+    if (stored) templates = JSON.parse(stored);
+  } catch(e) {}
+
+  const template = templates.find(t => t.id === templateId);
+  if (!template) {
+    showToast('模板不存在');
+    return;
+  }
+
+  // Update active chip
+  document.querySelectorAll('.bs-template-chip').forEach(c => c.classList.remove('active'));
+  const chip = document.querySelector(`.bs-template-chip[data-tpl-id="${templateId}"]`);
+  if (chip) chip.classList.add('active');
+
+  bsCurrentTemplate = templateId;
+  bsCanvasWidgets = [];
+
+  // Place widgets
+  template.widgets.forEach(w => {
+    if (w.gridIdx < 24) {
+      bsCanvasWidgets[w.gridIdx] = {type: w.type, title: w.title, gridIdx: w.gridIdx};
+    }
+  });
+
+  // Apply settings
+  if (template.settings) {
+    document.getElementById('bsRefreshInterval').value = template.settings.refreshInterval || '60';
+    document.getElementById('bsAutoRotate').value = template.settings.autoRotate || 'off';
+    document.getElementById('bsTheme').value = template.settings.theme || 'deepblue';
+  }
+  document.getElementById('bsTemplateName').value = template.name;
+  document.getElementById('bsTemplateCreated').textContent = new Date(template.createdAt).toLocaleDateString('zh-CN');
+
+  renderBsCanvas();
+  renderBsPreview();
+  updateTemplateInfo();
+  showToast(`已加载模板: ${template.name}`);
+}
+
+function deleteCustomTemplate(templateId) {
+  if (!confirm('确定删除此模板?')) return;
+
+  let templates = [];
+  try {
+    const stored = localStorage.getItem('cluehub_templates');
+    if (stored) templates = JSON.parse(stored);
+  } catch(e) {}
+
+  templates = templates.filter(t => t.id !== templateId);
+  localStorage.setItem('cluehub_templates', JSON.stringify(templates));
+
+  refreshCustomTemplateChips();
+  showToast('模板已删除');
+}
+
+function updateTemplateInfo() {
+  const count = bsCanvasWidgets.filter(Boolean).length;
+  document.getElementById('bsTemplateWidgetCount').textContent = count;
+}
+
+function openBigscreenInNewTab() {
+  const win = window.open('', '_blank');
+  if (!win) { showToast('请允许弹出窗口以查看大屏'); return; }
+
+  const widgets = bsCanvasWidgets.filter(Boolean);
+  const templateName = document.getElementById('bsTemplateName').value || '线索总览';
+  const theme = document.getElementById('bsTheme').value;
+
+  const html = buildBigscreenFromCanvas(widgets, templateName, theme);
+  win.document.write(html);
+  win.document.close();
+}
+
+const bsBgColors = {
+  deepblue: '#0a0f1e',
+  black: '#000000',
+  gray: '#1a1a1a'
+};
+
+function buildBigscreenFromCanvas(widgets, templateName, theme) {
+  const bgColor = bsBgColors[theme] || bsBgColors.deepblue;
+
+  // Generate widget HTML
+  const kpiWidgets = widgets.filter(w => w.type === 5);
+  const otherWidgets = widgets.filter(w => w.type !== 5);
+
+  let kpiHTML = '';
+  if (kpiWidgets.length > 0) {
+    kpiHTML = '<div style="display:flex;gap:12px;margin-bottom:12px;">';
+    kpiWidgets.forEach(w => {
+      const value = Math.floor(Math.random() * 15000 + 5000);
+      kpiHTML += `<div style="flex:1;background:rgba(26,35,64,0.8);border:1px solid rgba(42,58,92,0.6);border-radius:8px;padding:16px;text-align:center;">
+        <div style="font-size:28px;font-weight:800;background:linear-gradient(135deg,#60a5fa,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">${value.toLocaleString()}</div>
+        <div style="font-size:11px;color:#64748b;margin-top:4px;">${w.title}</div>
+      </div>`;
+    });
+    kpiHTML += '</div>';
+  }
+
+  // Grid for other widgets
+  const cols = otherWidgets.length <= 4 ? 2 : otherWidgets.length <= 6 ? 3 : 4;
+  let gridHTML = `<div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:12px;flex:1;">`;
+  otherWidgets.forEach(w => {
+    const widgetDef = WIDGETS[w.type];
+    gridHTML += `<div style="background:rgba(26,35,64,0.8);border:1px solid rgba(42,58,92,0.6);border-radius:8px;padding:12px;">
+      <div style="font-size:12px;font-weight:600;color:#e2e8f0;margin-bottom:8px;">${w.title}</div>
+      <div style="flex:1;display:flex;align-items:center;justify-content:center;min-height:120px;">
+        ${getFullSizeWidget(w.type, theme)}
+      </div>
+    </div>`;
+  });
+  gridHTML += '</div>';
+
+  return `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>大屏预览 - ${templateName} - 封面新闻</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100vh;overflow:hidden;}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:${bgColor};color:#e2e8f0;background-image:radial-gradient(circle at 20% 50%,rgba(59,130,246,0.03) 0%,transparent 50%),radial-gradient(circle at 80% 20%,rgba(139,92,246,0.03) 0%,transparent 50%),linear-gradient(rgba(42,58,92,0.1) 1px,transparent 1px),linear-gradient(90deg,rgba(42,58,92,0.1) 1px,transparent 1px);background-size:100% 100%,100% 100%,40px 40px,40px 40px;font-size:12px;}
+.bs-exit{position:fixed;top:8px;right:16px;z-index:10001;padding:5px 12px;border-radius:6px;font-size:11px;background:rgba(239,68,68,0.15);color:#f87171;border:1px solid rgba(239,68,68,0.3);cursor:pointer;transition:all .15s;font-family:inherit;}
+.bs-exit:hover{background:rgba(239,68,68,0.3);}
+.bs-toolbar{position:fixed;top:0;left:0;right:0;height:40px;background:rgba(10,15,30,0.95);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:space-between;padding:0 16px;z-index:10000;border-bottom:1px solid rgba(59,130,246,0.2);}
+.bs-toolbar-title{color:#e2e8f0;font-size:13px;font-weight:600;}
+.bs-toolbar-clock{color:#64748b;font-size:11px;font-variant-numeric:tabular-nums;margin-left:12px;}
+.bs-content{padding:48px 16px 16px;height:100vh;display:flex;flex-direction:column;}
+</style>
+</head>
+<body>
+<button class="bs-exit" onclick="window.close()">✕ 退出</button>
+<div class="bs-toolbar">
+  <div style="display:flex;align-items:center;">
+    <span class="bs-toolbar-title">📊 全网线索可视化展示系统 - ${templateName}</span>
+    <span class="bs-toolbar-clock" id="bsClock"></span>
+  </div>
+</div>
+<div class="bs-content">
+  ${kpiHTML}
+  ${gridHTML}
+</div>
+<script>
+function updateClock(){const now=new Date();const pad=n=>String(n).padStart(2,'0');const str=now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate())+' '+pad(now.getHours())+':'+pad(now.getMinutes())+':'+pad(now.getSeconds());const el=document.getElementById('bsClock');if(el)el.textContent=str;}
+setInterval(updateClock,1000);updateClock();
+<\/script>
+</body>
+</html>`;
+}
+
+function getFullSizeWidget(type, theme) {
+  const w = WIDGETS[type];
+  if (!w) return '<div style="color:#64748b;">未知组件</div>';
+
+  switch(w.type) {
+    case 'line':
+      return `<svg width="100%" height="120" viewBox="0 0 200 120">
+        <path d="M10,100 Q50,60 90,70 T170,40 L190,30" fill="none" stroke="#60a5fa" stroke-width="2.5"/>
+        <path d="M10,90 Q50,70 90,80 T170,50 L190,40" fill="none" stroke="#a78bfa" stroke-width="2" opacity="0.6"/>
+      </svg>`;
+    case 'bar':
+      return `<svg width="100%" height="120" viewBox="0 0 200 120">
+        <rect x="10" y="60" width="20" height="50" rx="3" fill="#60a5fa" opacity="0.8"/>
+        <rect x="40" y="40" width="20" height="70" rx="3" fill="#60a5fa" opacity="0.9"/>
+        <rect x="70" y="80" width="20" height="30" rx="3" fill="#60a5fa" opacity="0.7"/>
+        <rect x="100" y="30" width="20" height="80" rx="3" fill="#60a5fa"/>
+        <rect x="130" y="50" width="20" height="60" rx="3" fill="#60a5fa" opacity="0.8"/>
+        <rect x="160" y="70" width="20" height="40" rx="3" fill="#60a5fa" opacity="0.6"/>
+      </svg>`;
+    case 'pie':
+      return `<svg width="100%" height="120" viewBox="0 0 200 120">
+        <circle cx="100" cy="60" r="45" fill="none" stroke="#60a5fa" stroke-width="18" stroke-dasharray="90 210" opacity="0.9"/>
+        <circle cx="100" cy="60" r="45" fill="none" stroke="#a78bfa" stroke-width="18" stroke-dasharray="60 210" stroke-dashoffset="-90" opacity="0.8"/>
+        <circle cx="100" cy="60" r="45" fill="none" stroke="#34d399" stroke-width="18" stroke-dasharray="45 210" stroke-dashoffset="-150" opacity="0.7"/>
+        <circle cx="100" cy="60" r="28" fill="${bsBgColors[theme] || '#0a0f1e'}"/>
+      </svg>`;
+    case 'kpi':
+      return `<div style="text-align:center;"><div style="font-size:36px;font-weight:800;background:linear-gradient(135deg,#60a5fa,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">${Math.floor(Math.random()*20000+5000).toLocaleString()}</div><div style="font-size:11px;color:#64748b;margin-top:4px;">${w.name}</div></div>`;
+    default:
+      return getMiniPreview(type, 180, 120);
+  }
+}
+
+// ========== Report Generation ==========
+function openReportModal(type) {
+  const typeNames = {daily:'日报',weekly:'周报',monthly:'月报',special:'专题报告'};
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `<div class="modal modal-lg">
+    <span class="modal-close" onclick="this.closest('.modal-overlay').remove()">✕</span>
+    <h3>生成报告</h3>
+    <div class="form-row"><label>报告类型</label><div class="form-control"><select id="reportType">
+      <option value="daily" ${type==='daily'?'selected':''}>日报</option>
+      <option value="weekly" ${type==='weekly'?'selected':''}>周报</option>
+      <option value="monthly">月报</option>
+      <option value="special" ${type==='special'?'selected':''}>专题报告</option>
+    </select></div></div>
+    <div class="form-row"><label>开始日期</label><div class="form-control"><input type="date" id="reportDateStart" value="2026-11-09" /></div></div>
+    <div class="form-row"><label>结束日期</label><div class="form-control"><input type="date" id="reportDateEnd" value="2026-11-10" /></div></div>
+    <div class="form-row"><label>包含章节</label><div class="form-control"><div class="checkbox-group">
+      <label><input type="checkbox" checked value="overview" />线索概况</label>
+      <label><input type="checkbox" checked value="hottopic" />热搜分析</label>
+      <label><input type="checkbox" checked value="competitor" />竞品动态</label>
+      <label><input type="checkbox" checked value="sentiment" />情感分析</label>
+      <label><input type="checkbox" value="source" />来源分析</label>
+      <label><input type="checkbox" checked value="trend" />趋势预测</label>
+      <label><input type="checkbox" value="timeline" />关键事件时间线</label>
+      <label><input type="checkbox" checked value="suggestion" />决策建议</label>
+    </div></div></div>
+    <div class="form-row"><label>导出格式</label><div class="form-control"><select id="reportFormat"><option value="html">HTML (浏览器查看)</option><option value="pdf">PDF (打印版)</option></select></div></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:20px;">
+      <button class="btn btn-ghost" onclick="this.closest('.modal-overlay').remove()">取消</button>
+      <button class="btn btn-primary" onclick="doGenerateReport()">📝 生成报告</button>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+}
+
+function doGenerateReport() {
+  const type = document.getElementById('reportType').value;
+  const dateStart = document.getElementById('reportDateStart').value;
+  const dateEnd = document.getElementById('reportDateEnd').value;
+  const sections = Array.from(document.querySelectorAll('.checkbox-group input:checked')).map(cb => cb.value);
+  document.querySelector('.modal-overlay').remove();
+  showToast('正在生成报告...');
+  setTimeout(() => generateReport(type, dateStart, dateEnd, sections), 800);
+}
+
+function generateReport(type, dateStart, dateEnd, sections) {
+  sections = sections || ['overview','hottopic','competitor','sentiment','trend','suggestion'];
+  const typeNames = {daily:'线索日报',weekly:'线索周报',monthly:'线索月报',special:'专题报告'};
+  const typeName = typeNames[type] || '报告';
+  const reportHTML = buildReportHTML(typeName, dateStart, dateEnd, sections);
+  const win = window.open('', '_blank');
+  if (win) {
+    win.document.write(reportHTML);
+    win.document.close();
+  } else {
+    showToast('请允许弹出窗口以查看报告');
+  }
+}
+
+function buildReportHTML(typeName, dateStart, dateEnd, sections) {
+  let content = '';
+
+  if (sections.includes('overview')) {
+    content += `<div class="section"><h2>一、线索概况</h2>
+    <p>报告期内（${dateStart} 至 ${dateEnd}），全网线索总量为 <strong>15,283</strong> 条，较上一周期增长 <strong>14.2%</strong>。其中热搜命中 <strong>428</strong> 次，负面预警 <strong>18</strong> 条，传播影响力指数 <strong>96.7</strong>。</p>
+    <div class="kpi-grid">
+      <div class="kpi-box"><div class="kpi-num">15,283</div><div class="kpi-desc">线索总量</div></div>
+      <div class="kpi-box"><div class="kpi-num">428</div><div class="kpi-desc">热搜命中</div></div>
+      <div class="kpi-box"><div class="kpi-num">18</div><div class="kpi-desc">负面预警</div></div>
+      <div class="kpi-box"><div class="kpi-num">96.7</div><div class="kpi-desc">影响力指数</div></div>
+    </div></div>`;
+  }
+
+  if (sections.includes('hottopic')) {
+    content += `<div class="section"><h2>二、热搜分析</h2>
+    <p>报告期内热搜 TOP 5 关键词：</p>
+    <table><thead><tr><th>排名</th><th>关键词</th><th>热度</th><th>平台</th></tr></thead>
+    <tbody>
+    <tr><td>1</td><td>低空经济试点</td><td>856万</td><td>微博</td></tr>
+    <tr><td>2</td><td>三星堆6号坑</td><td>723万</td><td>微博</td></tr>
+    <tr><td>3</td><td>AI大模型应用</td><td>651万</td><td>知乎</td></tr>
+    <tr><td>4</td><td>新能源汽车出海</td><td>589万</td><td>百度</td></tr>
+    <tr><td>5</td><td>数字人民币推广</td><td>512万</td><td>微博</td></tr>
+    </tbody></table>
+    <p><strong>分析：</strong>低空经济和三星堆考古是本期最受关注的热点话题。低空经济试点方案的获批引发了产业链上下游的广泛讨论，预计热度将持续1-2周。三星堆新发现的文化价值和社会影响力深远，适合持续跟踪报道。</p></div>`;
+  }
+
+  if (sections.includes('competitor')) {
+    content += `<div class="section"><h2>三、竞品动态</h2>
+    <p>本期监控6家核心竞品，合计发稿 <strong>127</strong> 篇。</p>
+    <table><thead><tr><th>竞品</th><th>发稿量</th><th>热搜命中</th><th>重点报道</th></tr></thead>
+    <tbody>
+    <tr><td>红星新闻</td><td>52</td><td>7</td><td>三星堆6号坑首日发掘纪实</td></tr>
+    <tr><td>澎湃新闻</td><td>45</td><td>5</td><td>成都低空经济试点深度调查</td></tr>
+    <tr><td>南方都市报</td><td>41</td><td>4</td><td>数字人民币推广调查</td></tr>
+    <tr><td>界面新闻</td><td>38</td><td>3</td><td>四川新能源车企出海记</td></tr>
+    <tr><td>新京报</td><td>36</td><td>3</td><td>AI芯片产业链调研</td></tr>
+    <tr><td>观察者网</td><td>29</td><td>2</td><td>中美AI芯片竞争格局分析</td></tr>
+    </tbody></table>
+    <p><strong>分析：</strong>红星新闻凭借本地优势，在三星堆和低空经济两个热点上发稿量领先。澎湃新闻的深度调查模式值得学习，其低空经济报道传播量达23.4万。</p></div>`;
+  }
+
+  if (sections.includes('sentiment')) {
+    content += `<div class="section"><h2>四、情感分析</h2>
+    <p>本期线索情感分布：正面 <strong>62%</strong>、中性 <strong>27%</strong>、负面 <strong>11%</strong>。</p>
+    <p>正面情绪主要集中在成渝经济圈发展成就、三星堆考古发现、大熊猫保护成果等领域。负面情绪主要来源于新能源汽车行业竞争加剧和个别食品安全事件。</p>
+    <div style="display:flex;gap:16px;margin:16px 0;">
+      <div style="flex:1;text-align:center;padding:16px;background:#f0fdf4;border-radius:8px;border:1px solid #bbf7d0;"><div style="font-size:28px;font-weight:700;color:#16a34a;">62%</div><div style="color:#64748b;">正面</div></div>
+      <div style="flex:1;text-align:center;padding:16px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;"><div style="font-size:28px;font-weight:700;color:#64748b;">27%</div><div style="color:#64748b;">中性</div></div>
+      <div style="flex:1;text-align:center;padding:16px;background:#fef2f2;border-radius:8px;border:1px solid #fecaca;"><div style="font-size:28px;font-weight:700;color:#dc2626;">11%</div><div style="color:#64748b;">负面</div></div>
+    </div></div>`;
+  }
+
+  if (sections.includes('source')) {
+    content += `<div class="section"><h2>五、来源分析</h2>
+    <p>线索来源平台分布：微博占比最高（27.8%），其次为百度（20.6%）、抖音（17.5%）、知乎（12.1%）、头条（10.0%）、微信（7.8%）及其他（4.2%）。</p>
+    <p>四川地区贡献了最多的线索来源（27.5%），体现了封面新闻在本地市场的强大影响力。</p></div>`;
+  }
+
+  if (sections.includes('trend')) {
+    content += `<div class="section"><h2>${sections.includes('source')?'六':'五'}、趋势预测</h2>
+    <p>基于当前数据分析，预计未来一周以下话题将持续高热度：</p>
+    <ol>
+      <li><strong>低空经济</strong> - 试点方案进入实施阶段，预计将有更多城市和航线公布</li>
+      <li><strong>三星堆考古</strong> - 6号坑发掘预计持续3个月，期间将持续有新发现</li>
+      <li><strong>AI大模型应用</strong> - 多家企业产品即将发布，行业关注度持续上升</li>
+      <li><strong>数字人民币</strong> - 成都模式成功后，预计其他城市将跟进推广</li>
+    </ol></div>`;
+  }
+
+  if (sections.includes('timeline')) {
+    content += `<div class="section"><h2>${sections.includes('source')?(sections.includes('trend')?'七':'六'):(sections.includes('trend')?'六':'五')}、关键事件时间线</h2>
+    <table><thead><tr><th>时间</th><th>事件</th><th>影响</th></tr></thead>
+    <tbody>
+    <tr><td>11-10</td><td>成都低空经济试点方案正式获批</td><td>高</td></tr>
+    <tr><td>11-10</td><td>三星堆6号坑考古发掘正式启动</td><td>高</td></tr>
+    <tr><td>11-09</td><td>四川新能源车企出口数据公布</td><td>中</td></tr>
+    <tr><td>11-08</td><td>数字人民币成都公共交通全面推广</td><td>中</td></tr>
+    <tr><td>11-07</td><td>成渝双城经济圈前三季度GDP发布</td><td>中</td></tr>
+    </tbody></table></div>`;
+  }
+
+  if (sections.includes('suggestion')) {
+    content += `<div class="section"><h2>${sections.length > 6?'八':'七'}、决策建议</h2>
+    <ol>
+      <li><strong>重点跟进低空经济报道</strong>：建议安排深度报道团队跟踪首批无人机航线开通情况，制作系列报道。</li>
+      <li><strong>三星堆报道差异化</strong>：红星新闻已在首日发掘中领先，建议从文物解读和公众科普角度进行差异化报道。</li>
+      <li><strong>加强AI产业报道</strong>：成渝AI芯片产业链是新兴热点，建议策划专题报道，抢占行业话语权。</li>
+      <li><strong>关注竞品动态</strong>：澎湃新闻的深度调查模式值得借鉴，建议在重大选题上增加调查性报道投入。</li>
+      <li><strong>负面预警响应</strong>：当前负面预警18条，建议加强食品安全和消费维权类话题的监控和快速响应。</li>
+    </ol></div>`;
+  }
+
+  return `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>${typeName} - 封面新闻全网线索可视化展示系统</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;color:#1e293b;line-height:1.8;max-width:900px;margin:0 auto;padding:40px 32px;background:#fff;}
+.header{text-align:center;margin-bottom:40px;padding-bottom:24px;border-bottom:3px solid #3b82f6;}
+.header h1{font-size:24px;margin-bottom:4px;}
+.header .subtitle{font-size:14px;color:#64748b;}
+.header .meta{font-size:12px;color:#94a3b8;margin-top:8px;}
+.section{margin-bottom:32px;page-break-inside:avoid;}
+.section h2{font-size:18px;color:#1e293b;margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid #e2e8f0;}
+.section p{font-size:14px;color:#475569;margin-bottom:12px;}
+.section ol,.section ul{padding-left:24px;font-size:14px;color:#475569;}
+.section li{margin-bottom:8px;}
+table{width:100%;border-collapse:collapse;font-size:13px;margin:12px 0;}
+th{text-align:left;padding:10px 12px;background:#f8f9fb;border-bottom:2px solid #e2e8f0;font-weight:600;color:#64748b;}
+td{padding:10px 12px;border-bottom:1px solid #e2e8f0;}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:16px 0;}
+.kpi-box{text-align:center;padding:16px;background:#f8f9fb;border-radius:8px;border:1px solid #e2e8f0;}
+.kpi-num{font-size:28px;font-weight:700;color:#3b82f6;}
+.kpi-desc{font-size:12px;color:#94a3b8;margin-top:4px;}
+.print-btn{position:fixed;bottom:24px;right:24px;padding:12px 24px;background:#3b82f6;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer;box-shadow:0 4px 12px rgba(59,130,246,0.3);}
+.print-btn:hover{background:#2563eb;}
+strong{color:#1e293b;}
+@media print{
+  .print-btn{display:none;}
+  body{padding:20px;max-width:100%;}
+  .section{page-break-inside:auto;}
+  .header{border-bottom-width:2px;}
+}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>封面新闻 · ${typeName}</h1>
+  <div class="subtitle">全网线索可视化展示系统</div>
+  <div class="meta">报告周期：${dateStart} 至 ${dateEnd} | 生成时间：2026-11-10 16:45 | 封面新闻编辑部</div>
+</div>
+${content}
+<div style="text-align:center;padding:24px 0;border-top:1px solid #e2e8f0;margin-top:40px;color:#94a3b8;font-size:12px;">
+  — 报告结束 —<br/>封面新闻全网线索可视化展示系统 · 自动生成
+</div>
+<button class="print-btn" onclick="window.print()">🖨 打印 / 保存PDF</button>
+</body>
+</html>`;
+}
+
+// ========== Management Modals ==========
+function openKeywordManageModal() {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `<div class="modal modal-lg">
+    <span class="modal-close" onclick="this.closest('.modal-overlay').remove()">✕</span>
+    <h3>🔑 关键词管理</h3>
+    <p style="color:var(--text-3);font-size:13px;">管理热搜追踪的关注关键词，支持分组和启停控制</p>
+    <div style="margin-bottom:16px;">
+      <h4 style="font-size:14px;margin-bottom:10px;">当前追踪关键词</h4>
+      <table class="data-table">
+        <thead><tr><th>关键词</th><th>分组</th><th>状态</th><th>关注时间</th><th>操作</th></tr></thead>
+        <tbody>
+          <tr><td style="font-weight:600;">低空经济</td><td><span class="tag tag-info">产业</span></td><td><span class="tag tag-ok">启用</span></td><td>11-08</td><td><button class="btn btn-ghost btn-sm" onclick="showToast('已停用')">停用</button> <button class="btn btn-ghost btn-sm" onclick="showToast('已删除')">删除</button></td></tr>
+          <tr><td style="font-weight:600;">三星堆考古</td><td><span class="tag tag-hot">文化</span></td><td><span class="tag tag-ok">启用</span></td><td>11-07</td><td><button class="btn btn-ghost btn-sm" onclick="showToast('已停用')">停用</button> <button class="btn btn-ghost btn-sm" onclick="showToast('已删除')">删除</button></td></tr>
+          <tr><td style="font-weight:600;">AI大模型</td><td><span class="tag tag-info">科技</span></td><td><span class="tag tag-ok">启用</span></td><td>11-05</td><td><button class="btn btn-ghost btn-sm" onclick="showToast('已停用')">停用</button> <button class="btn btn-ghost btn-sm" onclick="showToast('已删除')">删除</button></td></tr>
+          <tr><td style="font-weight:600;">数字人民币</td><td><span class="tag tag-active">财经</span></td><td><span class="tag tag-ok">启用</span></td><td>11-03</td><td><button class="btn btn-ghost btn-sm" onclick="showToast('已停用')">停用</button> <button class="btn btn-ghost btn-sm" onclick="showToast('已删除')">删除</button></td></tr>
+          <tr><td style="font-weight:600;">新能源汽车</td><td><span class="tag tag-info">产业</span></td><td><span class="tag tag-ok">启用</span></td><td>10-28</td><td><button class="btn btn-ghost btn-sm" onclick="showToast('已停用')">停用</button> <button class="btn btn-ghost btn-sm" onclick="showToast('已删除')">删除</button></td></tr>
+          <tr><td style="font-weight:600;">成渝经济圈</td><td><span class="tag tag-active">财经</span></td><td><span class="tag tag-ok">启用</span></td><td>10-25</td><td><button class="btn btn-ghost btn-sm" onclick="showToast('已停用')">停用</button> <button class="btn btn-ghost btn-sm" onclick="showToast('已删除')">删除</button></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div style="border-top:1px solid var(--border);padding-top:16px;">
+      <h4 style="font-size:14px;margin-bottom:10px;">添加关键词</h4>
+      <div style="display:flex;gap:8px;margin-bottom:8px;">
+        <input type="text" placeholder="输入关键词..." style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px;" />
+        <select style="padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px;">
+          <option>产业</option><option>科技</option><option>财经</option><option>文化</option><option>社会</option>
+        </select>
+        <button class="btn btn-primary btn-sm" onclick="showToast('关键词已添加')">添加</button>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        <span class="source-tag" style="cursor:pointer;">乡村振兴 ✕</span>
+        <span class="source-tag" style="cursor:pointer;">大熊猫保护 ✕</span>
+        <span class="source-tag" style="cursor:pointer;">文旅融合 ✕</span>
+      </div>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+}
+
+function openCompetitorManageModal() {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `<div class="modal modal-lg">
+    <span class="modal-close" onclick="this.closest('.modal-overlay').remove()">✕</span>
+    <h3>🏢 管理竞品</h3>
+    <p style="color:var(--text-3);font-size:13px;">管理竞品列表，添加、编辑或删除竞品监控配置</p>
+    <div style="margin-bottom:16px;">
+      <h4 style="font-size:14px;margin-bottom:10px;">当前竞品列表</h4>
+      <table class="data-table">
+        <thead><tr><th>竞品名称</th><th>APP包名/URL</th><th>监控频率</th><th>关注关键词</th><th>操作</th></tr></thead>
+        <tbody>
+          <tr><td style="font-weight:600;">澎湃新闻</td><td>thepaper.cn</td><td>实时</td><td>深度报道, 调查</td><td><button class="btn btn-ghost btn-sm" onclick="showToast('编辑功能')">编辑</button> <button class="btn btn-ghost btn-sm" onclick="showToast('已删除')">删除</button></td></tr>
+          <tr><td style="font-weight:600;">界面新闻</td><td>jiemian.com</td><td>实时</td><td>财经, 商业</td><td><button class="btn btn-ghost btn-sm" onclick="showToast('编辑功能')">编辑</button> <button class="btn btn-ghost btn-sm" onclick="showToast('已删除')">删除</button></td></tr>
+          <tr><td style="font-weight:600;">红星新闻</td><td>cdsb.com</td><td>实时</td><td>四川, 突发</td><td><button class="btn btn-ghost btn-sm" onclick="showToast('编辑功能')">编辑</button> <button class="btn btn-ghost btn-sm" onclick="showToast('已删除')">删除</button></td></tr>
+          <tr><td style="font-weight:600;">南方都市报</td><td>nddaily.com</td><td>实时</td><td>广东, 深度</td><td><button class="btn btn-ghost btn-sm" onclick="showToast('编辑功能')">编辑</button> <button class="btn btn-ghost btn-sm" onclick="showToast('已删除')">删除</button></td></tr>
+          <tr><td style="font-weight:600;">新京报</td><td>bjnews.com.cn</td><td>实时</td><td>北京, 时政</td><td><button class="btn btn-ghost btn-sm" onclick="showToast('编辑功能')">编辑</button> <button class="btn btn-ghost btn-sm" onclick="showToast('已删除')">删除</button></td></tr>
+          <tr><td style="font-weight:600;">观察者网</td><td>guancha.cn</td><td>每小时</td><td>国际, 时政</td><td><button class="btn btn-ghost btn-sm" onclick="showToast('编辑功能')">编辑</button> <button class="btn btn-ghost btn-sm" onclick="showToast('已删除')">删除</button></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div style="border-top:1px solid var(--border);padding-top:16px;">
+      <h4 style="font-size:14px;margin-bottom:10px;">添加竞品</h4>
+      <div class="form-row"><label>竞品名称</label><div class="form-control"><input type="text" placeholder="例如：财新网" /></div></div>
+      <div class="form-row"><label>APP包名/URL</label><div class="form-control"><input type="text" placeholder="例如：caixin.com" /></div></div>
+      <div class="form-row"><label>监控频率</label><div class="form-control"><select><option>实时</option><option>每5分钟</option><option>每小时</option><option>每日</option></select></div></div>
+      <div class="form-row"><label>关注关键词</label><div class="form-control"><input type="text" placeholder="多个关键词用逗号分隔" /></div></div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px;">
+        <button class="btn btn-primary btn-sm" onclick="showToast('竞品已添加')">添加竞品</button>
+      </div>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+}
+
+function openAlertSettingModal(name) {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `<div class="modal">
+    <span class="modal-close" onclick="this.closest('.modal-overlay').remove()">✕</span>
+    <h3>🔔 设置预警 - ${name}</h3>
+    <p style="color:var(--text-3);font-size:13px;">配置 ${name} 的预警触发条件和通知方式</p>
+    <div class="form-row"><label>发稿量阈值</label><div class="form-control"><input type="number" value="40" placeholder="超过此数量触发预警" /></div></div>
+    <div class="form-row"><label>热搜触发条件</label><div class="form-control"><select><option>登上微博热搜 TOP 10</option><option>登上百度热搜 TOP 10</option><option>任何平台热搜</option><option>自定义</option></select></div></div>
+    <div class="form-row"><label>预警通知方式</label><div class="form-control"><div class="checkbox-group">
+      <label><input type="checkbox" checked /> 站内通知</label>
+      <label><input type="checkbox" checked /> 邮件</label>
+      <label><input type="checkbox" /> 短信</label>
+    </div></div></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;">
+      <button class="btn btn-ghost" onclick="this.closest('.modal-overlay').remove()">取消</button>
+      <button class="btn btn-primary" onclick="showToast('预警设置已保存');this.closest('.modal-overlay').remove()">保存设置</button>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+}
+
+function openLeadImportModal() {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `<div class="modal">
+    <span class="modal-close" onclick="this.closest('.modal-overlay').remove()">✕</span>
+    <h3>📥 线索导入</h3>
+    <p style="color:var(--text-3);font-size:13px;">从不同来源导入线索数据</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+      <div style="padding:20px;border:1px solid var(--border);border-radius:var(--radius-lg);text-align:center;cursor:pointer;transition:all .15s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'" onclick="showToast('从微博导入功能开发中')">
+        <div style="font-size:28px;margin-bottom:6px;">📱</div>
+        <div style="font-size:13px;font-weight:600;">微博热搜</div>
+        <div style="font-size:11px;color:var(--text-3);">导入微博热搜关键词</div>
+      </div>
+      <div style="padding:20px;border:1px solid var(--border);border-radius:var(--radius-lg);text-align:center;cursor:pointer;transition:all .15s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'" onclick="showToast('从百度导入功能开发中')">
+        <div style="font-size:28px;margin-bottom:6px;">🔍</div>
+        <div style="font-size:13px;font-weight:600;">百度指数</div>
+        <div style="font-size:11px;color:var(--text-3);">导入百度搜索热点</div>
+      </div>
+      <div style="padding:20px;border:1px solid var(--border);border-radius:var(--radius-lg);text-align:center;cursor:pointer;transition:all .15s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'" onclick="showToast('从Excel导入功能开发中')">
+        <div style="font-size:28px;margin-bottom:6px;">📊</div>
+        <div style="font-size:13px;font-weight:600;">Excel 文件</div>
+        <div style="font-size:11px;color:var(--text-3);">上传 Excel/CSV 文件</div>
+      </div>
+      <div style="padding:20px;border:1px solid var(--border);border-radius:var(--radius-lg);text-align:center;cursor:pointer;transition:all .15s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'" onclick="showToast('从API导入功能开发中')">
+        <div style="font-size:28px;margin-bottom:6px;">🔗</div>
+        <div style="font-size:13px;font-weight:600;">API 接口</div>
+        <div style="font-size:11px;color:var(--text-3);">配置外部API导入</div>
+      </div>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+}
+
+function openAlertSettingsModal() {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `<div class="modal modal-lg">
+    <span class="modal-close" onclick="this.closest('.modal-overlay').remove()">✕</span>
+    <h3>⚙ 告警设置</h3>
+    <p style="color:var(--text-3);font-size:13px;">配置告警规则和通知方式</p>
+    <div style="margin-bottom:16px;">
+      <h4 style="font-size:14px;margin-bottom:10px;">告警规则</h4>
+      <table class="data-table">
+        <thead><tr><th>规则名称</th><th>触发条件</th><th>通知方式</th><th>状态</th><th>操作</th></tr></thead>
+        <tbody>
+          <tr><td style="font-weight:600;">热搜爆发预警</td><td>关键词30分钟内热度上涨200%</td><td>站内 + 邮件</td><td><span class="tag tag-ok">启用</span></td><td><button class="btn btn-ghost btn-sm" onclick="showToast('编辑功能')">编辑</button></td></tr>
+          <tr><td style="font-weight:600;">竞品发稿预警</td><td>竞品单日发稿超过阈值</td><td>站内 + 邮件</td><td><span class="tag tag-ok">启用</span></td><td><button class="btn btn-ghost btn-sm" onclick="showToast('编辑功能')">编辑</button></td></tr>
+          <tr><td style="font-weight:600;">负面舆情预警</td><td>负面线索占比超过15%</td><td>站内 + 邮件 + 短信</td><td><span class="tag tag-ok">启用</span></td><td><button class="btn btn-ghost btn-sm" onclick="showToast('编辑功能')">编辑</button></td></tr>
+          <tr><td style="font-weight:600;">数据源异常预警</td><td>采集失败或数据量异常下降</td><td>站内通知</td><td><span class="tag tag-ok">启用</span></td><td><button class="btn btn-ghost btn-sm" onclick="showToast('编辑功能')">编辑</button></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div style="border-top:1px solid var(--border);padding-top:16px;">
+      <h4 style="font-size:14px;margin-bottom:10px;">通知设置</h4>
+      <div class="form-row"><label>邮件通知</label><div class="form-control"><input type="email" value="zhang@thecover.cn" /></div></div>
+      <div class="form-row"><label>短信通知</label><div class="form-control"><input type="tel" value="138****8888" /></div></div>
+      <div class="form-row"><label>静默时间</label><div class="form-control"><input type="text" value="22:00 - 08:00" placeholder="不发送通知的时间段" /></div></div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;">
+      <button class="btn btn-ghost" onclick="this.closest('.modal-overlay').remove()">取消</button>
+      <button class="btn btn-primary" onclick="showToast('告警设置已保存');this.closest('.modal-overlay').remove()">保存设置</button>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+}
+
+// ========== Periodic KPI Update ==========
+setInterval(() => {
+  if (currentPage !== 'dashboard') return;
+  const el = document.getElementById('kpi-total');
+  if (el) {
+    const base = 15283;
+    const delta = Math.floor(Math.random() * 50) - 20;
+    el.textContent = (base + delta).toLocaleString();
+  }
+}, 5000);
+
+// ========== Initialize ==========
+function init() {
+  renderTrendChart('chart-trend-7d', [[9800,10500,11200,12100,13500,14200,15283]], ['11-04','11-05','11-06','11-07','11-08','11-09','11-10']);
+  renderWordCloud('wordCloud1');
+  renderSourceChart('platform');
+  renderSentiment('chart-sentiment');
+  renderHeatmap('chart-heatmap');
+  renderHotTopicTable();
+  renderKeywordTrend();
+  renderCompetitorCards();
+  renderCompetitorNews();
+  renderCompeteVolume();
+  renderLeadCards();
+  renderLeadSourceMini();
+  renderCompareChart();
+  initUnifiedBigscreen();
+}
+
+init();
+
+</script>
+</body>
+</html>
